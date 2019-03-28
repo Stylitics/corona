@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2019 Léon Talbot
+
 Copyright (c) 2019 Stylitics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
