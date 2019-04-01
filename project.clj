@@ -1,7 +1,7 @@
 (require 'cemerick.pomegranate.aether)
 (cemerick.pomegranate.aether/register-wagon-factory!
  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
-(defproject corona "0.1.0-snapshot"
+(defproject corona "0.1.0-SNAPSHOT"
   :description "A clojure wrapper Solr client"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.9.0"]
@@ -16,6 +16,9 @@
                  [clj-http "3.9.1"]
                  [me.raynes/fs "1.4.6"]
                  [ring/ring-codec "1.1.1"]]
+  :plugins [[s3-wagon-private "1.3.1"]]
+  :repositories [["private1" {:url "s3p://stylitics.clojure/corona/releases/"
+                              :no-auth true}]]
   :source-paths ["src"]
   :java-source-paths ["jsrc"]
   :main corona.client

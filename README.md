@@ -32,6 +32,10 @@ Clojure Solr wrapper (pre-alpha stage, expect API to break)
 * doc/Installation.md
 * doc/Data-Import.md
 
+## Development 
+
+### TEMP: Building private repo
+Source your env vars and run `lein deploy private1`
 
 ## License
 
