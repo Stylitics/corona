@@ -2,8 +2,7 @@
   (:require
    [clj-http.client :as http]
    [ring.util.codec :refer [form-encode]]
-   [corona.client :as client]
-   [corona.cmd :as cmd])
+   [corona.client :as client])
   (:import
    (org.apache.solr.handler.dataimport
     DataImportHandler

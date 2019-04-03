@@ -1,7 +1,9 @@
 (ns corona.client
   (:refer-clojure :exclude [reset!])
   (:require
+   [clj-http.client :as http]
    [clojure.data.csv :as csv]
+   [clojure.data.json :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [corona.conversion :refer [->clojure]]
@@ -57,6 +59,10 @@
   [config & [uri]]
   (let [{:keys [host port path core]} (merge default-http-config config)]
     (str "http://" host ":" port path (when core (str "/" (name core))) uri)))
+
+(defn create-admin-url
+  [config & [uri]]
+  (create-client-url (assoc config :core :admin) uri))
 
 (defmethod create-client* :http [config]
   (let [{:keys [connection-timeout socket-timeout] :as config}
@@ -119,13 +125,41 @@
   `(binding [*client* ~client]
      ~@body))
 
+;;; Core Admin
+
+;; TODO: extend API with all opts, see https://lucene.apache.org/solr/guide/7_6/coreadmin-api.html
+(defn create-core!
+  [client-config & [{:keys [core instance-dir]}]]
+  (let [core-name (name (or core (:core client-config)))
+        uri (cond-> (str "/cores?action=CREATE&name=" core-name)
+              instance-dir (str "&instanceDir=" instance-dir))]
+    (-> (create-admin-url client-config uri)
+        (http/get {:throw-exceptions false
+                   :content-type     :json
+                   :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
+
+(defn delete-core!
+  [client-config & [{:keys [core delete-index?]}]]
+  (let [core-name (name (or core (:core client-config)))
+        uri (cond-> (str "/cores?action=UNLOAD&core=" core-name)
+              delete-index? (str "&deleteIndex=true"))]
+    (-> (create-admin-url client-config uri)
+        (http/get {:throw-exceptions false
+                   :content-type     :json
+                   :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
+
 (comment
   ;; Http Solr Example
   (def client (create-client {:type :http :core :tmdb}))
   ;; Embedded Solr Example
   (def client (create-client {:type :embedded :core :tmdb}))
-)
-
+  (create-core! {:type :http :core :tmdb})
+  (delete-core! {:type :http :core :tmdb})
+  )
 
 ;;; Update
 
