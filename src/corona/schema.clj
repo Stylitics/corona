@@ -101,16 +101,35 @@
     :type \"pint\"
     :stored true
     :indexed true})
+
+  ;; add multiple fields at once
+
+  (add-field!
+   {:type :http :core :replacements}
+   [{:name \"id\"
+     :type \"pint\"
+     :stored true
+     :indexed true}
+    {:name \"pid\"
+     :type \"pint\"
+     :stored true
+     :indexed true}])
   "
   [client-config field-map]
   (update-field! client-config {:add-field field-map}))
 
+;; 
 (defn replace-field!
-  "Delete a Field
-  The delete-field command removes a field definition from your schema. If the field does not exist in the schema, or if the field is the source or destination of a copy field rule, an error is thrown.
+  "Replace a Field
+  The replace-field command replaces a field’s definition. Note that you must supply the full definition for a field - this command will not partially modify a field’s definition. If the field does not exist in the schema an error is thrown.
 
   Usage:
-
+  (replace-field!
+   {:type :http :core :replacements}
+   {:name \"id\"
+    :type \"string\"
+    :stored true
+    :indexed true})
   "
   [client-config field-map]
   (update-field! client-config {:replace-field field-map}))
