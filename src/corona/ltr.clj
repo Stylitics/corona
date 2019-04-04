@@ -5,49 +5,51 @@
    [clojure.string :as string]
    [corona.client :as client]))
 
-;;; WARNING: Vastly incomplete and sometimes too specific. Please submit PR.
+;;; NOTE: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
 
 
-;;; Features
+;;; Feature extraction helpers
 
 (defn read-distinct-coll
-  "Reads records, decodes values of 'field' assuming it json-encoded array
-  and returns globally distinct values of 'take-k' key in decoded items."
-  [records field take-k]
-  (->> records (mapcat field) (distinct) (map string/lower-case) (doall)))
+  "Returns all distinct values across records under a given multiValued field."
+  [records field]
+  (->> records (mapcat field) (map string/lower-case) (distinct) (doall)))
 
 (defn gen-coll-features
-  "Builds feature descriptions for multivalued field, using 'take-k' key to get distinct values in dataset.
-  'store-name' - string name of store to specify for features."
-  [records field take-k store-name]
-  (->> (read-distinct-coll records field take-k)
+  "Builds multivalued field features, one per distinct field value across
+  all records
+  eg. for field 'genres': 'hasGenresAction', 'hasGenresDrama', etc."
+  [records field store-name & [params]]
+  (->> (read-distinct-coll records field)
        (map (fn [g] {:store  store-name
                      :name   (str "has"
                                   (string/capitalize (name field))
                                   (string/capitalize (string/replace g #" " "_")))
                      :class  "org.apache.solr.ltr.feature.SolrFeature"
-                     :params {:q (str "{!func}termfreq(" (name field) ",'" g "')")}}))))
+                     :params (merge {:q (str "{!func}termfreq(" (name field) ",'" g "')")}
+                                    params)}))))
 
 (defn gen-field-feature
   "Builds feature description for simple records 'field'
   'store-name' - string name of store to specify for features."
-  [field store-name]
+  [field store-name & [params]]
   {:store  store-name
    :name   (name field)
    :class  "org.apache.solr.ltr.feature.FieldValueFeature"
-   :params {:field (name field)}})
+   :params (merge {:field (name field)} params)})
 
 (defn gen-external-value-feature
   "Builds feature description for simple externally supplied  value with key 'value-k'.
   'required?' - (true/false) if value will'be required with ltr query;
   'store-name' - string name of store to specify for features."
-  [value-k required? store-name]
+  [value-k required? store-name & [params]]
   {:pre [(or (true? required?) (false? required?))]}
   {:store  store-name
    :name   (name value-k)
    :class  "org.apache.solr.ltr.feature.ValueFeature"
-   :params {:value    (str "${" (name value-k) "}")
-            :required (-> required? false? not)}})
+   :params (merge {:value    (str "${" (name value-k) "}")
+                   :required (-> required? false? not)}
+                  params)})
 
 
 ;;; Feature Store
@@ -95,7 +97,9 @@
   Returns mapped collection."
   [entries n f]
   (let [start (- (count entries) n)]
-    (map-indexed (fn [index entry] (if (< index start) entry (f (- index start) entry))) entries)))
+    (map-indexed (fn [index entry]
+                   (if (< index start) entry (f (- index start) entry)))
+                 entries)))
 
 (defn prepare-features-for-nn
   [store-name built-features mins maxs]
@@ -122,7 +126,7 @@
 
 ;;; Update model store
 
-(defn make-model-store-url
+(defn make-model-store-base-url
   [client-config]
   (client/create-client-url client-config "/schema/model-store"))
 
@@ -133,7 +137,7 @@
   Returns json-decoded body of response."
   [client-config model-name]
   (->
-   (http/delete (str (make-model-store-url client-config) "/" model-name)
+   (http/delete (str (make-model-store-base-url client-config) "/" model-name)
                  {:throw-exceptions false
                   :accept           :json})
     :body
@@ -145,7 +149,7 @@
   Returns json-decoded body of response.
   NOTE: only supported with :http config type."
   [client-config model]
-  (-> (make-model-store-url client-config)
+  (-> (make-model-store-base-url client-config)
       (http/put {:throw-exceptions false
                  :body             (json/write-str model)
                  :content-type     :json
