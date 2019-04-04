@@ -38,7 +38,11 @@
             []
             rrows)))
 
+(defn read-csv
+  [filename csv-opts]
+  (with-open [reader (-> filename io/reader)]
+    (mappify-csv-data (csv/read-csv reader) csv-opts)))
+
 (defn read-csv-resource
   [filename csv-opts]
-  (with-open [reader (-> filename io/resource io/reader)]
-    (mappify-csv-data (csv/read-csv reader) csv-opts)))
+  (read-csv (io/resource filename) csv-opts))
