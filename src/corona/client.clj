@@ -141,10 +141,19 @@
         (json/read-str :key-fn keyword))))
 
 (defn delete-core!
-  [client-config & [{:keys [core delete-index?]}]]
+  ":core <string>: The name of one of the cores to be removed.
+  :delete-index? <bool>: If true, will remove the index when unloading the core.
+  :delete-data-dir? <bool>: If true, removes the data directory and all sub-directories.
+  :delete-instance-dir? <bool>: If true, removes everything related to the core, including the index directory, configuration files and other related files.
+  :async <string>: Request ID to track this action which will be processed asynchronously
+  "
+  [client-config & [{:keys [core delete-index? delete-data-dir? delete-instance-dir? async]}]]
   (let [core-name (name (or core (:core client-config)))
         uri (cond-> (str "/cores?action=UNLOAD&core=" core-name)
-              delete-index? (str "&deleteIndex=true"))]
+              delete-index? (str "&deleteIndex=true")
+              delete-data-dir? (str "&deleteDataDir=true")
+              delete-instance-dir? (str "&deleteInstanceDir=true")
+              async (str "&async=" async))]
     (-> (create-admin-url client-config uri)
         (http/get {:throw-exceptions false
                    :content-type     :json
