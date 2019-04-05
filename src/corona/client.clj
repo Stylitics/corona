@@ -174,6 +174,8 @@
         (json/read-str :key-fn keyword))))
 
 (defn get-core-status-details
+  "Gets core status and returns only core details map.
+  Note: if core doesn't exist, it will return nil."
   [client-config & [{:keys [core index-info?]}]]
   (let [core (or core (:core client-config))]
     (-> (get-core-status client-config)
