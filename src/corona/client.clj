@@ -161,6 +161,26 @@
         :body
         (json/read-str :key-fn keyword))))
 
+(defn get-core-status
+  [client-config & [{:keys [core index-info?]}]]
+  (let [core-name (name (or core (:core client-config)))
+        uri (cond-> (str "/cores?action=STATUS&core=" core-name)
+              (false? index-info?) (str "&indexInfo=false"))]
+    (-> (create-admin-url client-config uri)
+        (http/get {:throw-exceptions false
+                   :content-type     :json
+                   :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
+
+(defn get-core-status-details
+  [client-config & [{:keys [core index-info?]}]]
+  (let [core (or core (:core client-config))]
+    (-> (get-core-status client-config)
+        :status
+        core
+        not-empty)))
+
 (comment
   ;; Http Solr Example
   (def client (create-client {:type :http :core :tmdb}))
@@ -168,6 +188,7 @@
   (def client (create-client {:type :embedded :core :tmdb}))
   (create-core! {:type :http :core :tmdb})
   (delete-core! {:type :http :core :tmdb})
+  (get-core-status-details {:type :http :core :item})
   )
 
 ;;; Update
