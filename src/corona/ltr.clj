@@ -8,7 +8,14 @@
 ;;; NOTE: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
 
 
-;;; Feature extraction helpers
+;;; Feature Engineering
+
+;; The LTR contrib module includes several feature classes as well as support
+;; for custom features. Each feature class’s javadocs contain an example to
+;; illustrate use of that class. The process of feature engineering itself is
+;; then entirely up to your domain expertise and creativity.
+;; Source: https://lucene.apache.org/solr/guide/6_6/learning-to-rank.html#LearningToRank-Featureengineering
+
 
 (defn read-distinct-coll
   "Returns all distinct values across records under a given multiValued field."
@@ -85,6 +92,37 @@
                  :accept           :json})
       :body
       (json/read-str :key-fn keyword)))
+
+
+ ;;; Feature extraction
+
+(defn extract-features
+  "Extracts features from feature store and returns vector of maps with keys:
+  :<document index key> (e.g. :id)
+  :features - vector of features values for given document"
+  [client-config {:keys [q rows sort fl store]}]
+  (let [sorl-core-url (client/create-client-url client-config)
+        url (str sorl-core-url
+                 "/query?q=" (or q "*:*")
+                 "&rows=" (or rows "10000")
+                 "&sort=" (or sort "id asc")
+                 "&fl=" (or fl "id")
+                 ",[features store=" store "]")
+        docs (-> (http/get url {:accept :json})
+                 :body
+                 (json/read-str :key-fn (fn [k] (if (= k "[features]")
+                                                  :features
+                                                  (keyword k))))
+                 :response
+                 :docs)]
+
+    (->> docs
+         (mapv #(update % :features
+                        (fn [features]
+                          (->> (string/split features #",")
+                               (map (fn [feat] (string/split feat #"=")))
+                               (map second)
+                               (mapv (fn [f] (Float/parseFloat f))))))))))
 
 
 ;;; Model
