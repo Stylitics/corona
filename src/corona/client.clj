@@ -284,10 +284,59 @@
    (->clojure (.query client (query/create-solr-params query-map)))))
 
 (defn query-mlt
-  "Makes and executes solr query from query-map
+  "A MoreLikeThis query that uses MLT request handler to give back similar
+  results to a matching document identified in the query under :q (e.g. {:q id:12345}.)
+
+  From the specified document, MLT handler will build a query behind the scenes, by
+  searching for 'interesting terms' from fields specified under :fl key.
+
+  PriorityQueue is used to fetch the scores for all the terms, which are then added
+  as boost queries to a large set of terms in a boolean query, where each term is
+  set to SHOULD occur. That way the terms are boosted based on MLT semantics, while
+  it uses the ClassicSimilarity behind the scenes.
+
+  NOTE: Getting good MLT results require some fine-tuning based on experimentation,
+  in particular mlt.mintf. Start low and slowly increase until you start getting
+  results that \"feel right\".
+
+  As MoreLikeThis constructs a lucene query based on terms within a document, for best
+  results, use stored TermVectors in the managedschema file for fields you will use
+  for similarity.
+
+  (e.g. <field name=\"cat\" ... termVectors=\"true\" />)
+
+  If termVectors are not stored, MoreLikeThis will generate terms from stored fields.
+
+  Makes and executes solr query from query-map
   Uses solr /mlt route.
-  Returns decoded response of solr service."
+  Returns decoded response of solr service.
+  "
   ([query-map]
    (query-mlt *client* query-map))
   ([^SolrClient client query-map]
    (->clojure (.query client (query/create-mlt-solr-params query-map)))))
+
+(defn query-mlt-edismax
+  "Like more like this handler query or `query-mlt` but allows edismax params
+  (e.g. `:boost` `:bf` `:bq` `:qf`)
+  This query handler runs a MLT query then passes boosted interesting terms
+  to normal edismax query `(query client {:defType \"edismax\" ...})`
+  Special keys:
+  - `:mlt.q` to reach the matching document to get interesting terms for.
+  - `:mlt.boost.factor` to globally change mlt.fl boosts.
+  "
+  [client settings]
+  (let [mlt-q (:mlt.q settings)
+        mlt-settings (when mlt-q (query/build-internal-mlt-settings settings))
+        mlt-resp (when mlt-q (query-mlt client mlt-settings))
+        mlt-terms (cond-> (query/mlt-resp->terms mlt-resp)
+                    (:mlt.boost settings) (query/boost-terms
+                                           (:mlt.qf settings)
+                                           (:mlt.boost.factor settings)))
+        q (query/mlt-terms->q mlt-q mlt-terms (:q settings))
+        settings (-> settings
+                     (assoc :q q)
+                     (dissoc query/mlt-keys)
+                     (dissoc :mlt.boost.factor))
+        resp (query client (merge {:defType "edismax"} settings))]
+    (assoc resp :interestingTerms mlt-terms :match (:match mlt-resp))))

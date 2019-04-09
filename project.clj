@@ -1,6 +1,3 @@
-(require 'cemerick.pomegranate.aether)
-(cemerick.pomegranate.aether/register-wagon-factory!
- "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 (defproject corona "0.1.0-SNAPSHOT"
   :description "A clojure wrapper Solr client"
   :url "http://example.com/FIXME"
