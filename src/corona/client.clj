@@ -275,55 +275,127 @@
 ;;; Query
 
 (defn query
-  "Makes and executes solr query from query-map
+  "Makes and executes solr query from setting map
   Uses solr /select route.
   Returns decoded response of solr service."
-  ([query-map]
-   (query *client* query-map))
-  ([^SolrClient client query-map]
-   (->clojure (.query client (query/create-solr-params query-map)))))
+  ([settings]
+   (query *client* settings))
+  ([^SolrClient client settings]
+   (->clojure (.query client (query/create-solr-params settings)))))
+
 
 (defn query-mlt
-  "A MoreLikeThis query that uses MLT request handler to give back similar
-  results to a matching document identified in the query under :q (e.g. {:q id:12345}.)
+  "A MoreLikeThis query that uses MLT request handler (/mlt route) to give back
+  similar results to a matching document identified in the query under :q
+  (e.g. {:q id:12345}.)
 
-  From the specified document, MLT handler will build a query behind the scenes, by
-  searching for 'interesting terms' from fields specified under :fl key.
+  From the specified document, MLT handler will build a query behind the scenes,
+  by searching for 'interesting terms' from fields specified under :fl key.
 
-  PriorityQueue is used to fetch the scores for all the terms, which are then added
-  as boost queries to a large set of terms in a boolean query, where each term is
-  set to SHOULD occur. That way the terms are boosted based on MLT semantics, while
-  it uses the ClassicSimilarity behind the scenes.
+  PriorityQueue is used to fetch the scores for all the terms, which are then
+  added as boost queries to a large set of terms in a boolean query, where each
+  term is set to SHOULD occur. That way the terms are boosted based on MLT
+  semantics, while it uses the ClassicSimilarity behind the scenes.
 
+  settings map:
+
+  :q
+  Query terms, defaults to '*:*', or everything.
+
+  :fq
+  Filter query, this does not affect the search, only what gets returned
+
+  :mlt.fl
+  The fields to use for similarity. DEFAULT_FIELD_NAMES = \"contents\"
+  NOTE: if possible use stored TermVectors in the managedschema file for fields
+  (e.g. <field name=\"cat\" ... termVectors=\"true\" />)
+  If termVectors are not stored, MoreLikeThis will generate terms from stored fields.
+
+  :mlt.mintf
+  Minimum Term Frequency - the frequency below which terms will be
+  ignored in the source doc. DEFAULT_MIN_TERM_FREQ = 2
   NOTE: Getting good MLT results require some fine-tuning based on experimentation,
   in particular mlt.mintf. Start low and slowly increase until you start getting
   results that \"feel right\".
 
-  As MoreLikeThis constructs a lucene query based on terms within a document, for best
-  results, use stored TermVectors in the managedschema file for fields you will use
-  for similarity.
+  :mlt.mindf
+  Minimum Document Frequency - the frequency at which words will be
+  ignored which do not occur in at least this many docs. DEFAULT_MIN_DOC_FREQ = 5
 
-  (e.g. <field name=\"cat\" ... termVectors=\"true\" />)
+  :mlt.minwl
+  Minimum word length below which words will be ignored. DEFAULT_MIN_WORD_LENGTH = 0
 
-  If termVectors are not stored, MoreLikeThis will generate terms from stored fields.
+  :mlt.maxwl
+  Maximum word length above which words will be ignored. DEFAULT_MAX_WORD_LENGTH = 0
 
-  Makes and executes solr query from query-map
-  Uses solr /mlt route.
-  Returns decoded response of solr service.
+  :mlt.maxqt
+  Maximum number of query terms that will be included in any generated query.
+  DEFAULT_MAX_QUERY_TERMS = 25
+
+  :mlt.maxntp
+  Maximum number of tokens to parse in each example doc field that is not stored
+  with TermVector support. DEFAULT_MAX_NUM_TOKENS_PARSED = 5000
+
+  :mlt.boost
+  [true/false] set if the query will be boosted by the interesting term relevance.
+  DEFAULT_BOOST = false
+
+  :mlt.qf
+  Query fields and their boosts using the same format as that used in
+  DisMaxQParserPlugin. These fields must also be specified in mlt.fl.
+
+  :mlt.match.include
+  Specifies whether or not the response should include the matched document
+  under :match key. Default: true
+
+  :mlt.match.offset
+  Specifies an offset into the main query search results to locate the document
+  on which the MoreLikeThis query should operate. By default, the query operates
+  on the first result for the q parameter.
+
+  :mlt.interestingTerms
+  Controls how the MoreLikeThis component presents the \"interesting\" terms
+  (the top TF/IDF terms) for the query. Supports three values.
+  - \"list\" : lists the terms.
+  - \"none\" : lists no terms.
+  - \"details\": lists the terms along with the boost value used for each term.
+  Unless mlt.boost=true, all terms will have boost=1.0.
+
+  :fl
+  Fields to return. We force 'id' to be returned so that there is a unique
+  identifier with each record.
+
+  :wt
+  Data type returned, defaults to 'json'
+
+  :start
+  Record to start at, default to beginning.
+
+  :rows
+  Number of records to return. Defaults to 10.
   "
-  ([query-map]
-   (query-mlt *client* query-map))
-  ([^SolrClient client query-map]
-   (->clojure (.query client (query/create-mlt-solr-params query-map)))))
+  ([settings]
+   (query-mlt *client* settings))
+  ([^SolrClient client settings]
+   (->clojure (.query client (query/create-mlt-solr-params settings)))))
+
+;; DEV NOTE: Possible enhancement: https://github.com/DiceTechJobs/RelevancyFeedback#isnt-this-just-the-mlt-handler
+
 
 (defn query-mlt-edismax
   "Like more like this handler query or `query-mlt` but allows edismax params
   (e.g. `:boost` `:bf` `:bq` `:qf`)
+
   This query handler runs a MLT query then passes boosted interesting terms
   to normal edismax query `(query client {:defType \"edismax\" ...})`
-  Special keys:
-  - `:mlt.q` to reach the matching document to get interesting terms for.
-  - `:mlt.boost.factor` to globally change mlt.fl boosts.
+
+  Special settings:
+
+  :mlt.q
+  To reach the matching document to get interesting terms for.
+
+  :mlt.boost.factor
+  to globally change mlt.fl boosts.
   "
   [client settings]
   (let [mlt-q (:mlt.q settings)
@@ -337,6 +409,16 @@
         settings (-> settings
                      (assoc :q q)
                      (dissoc query/mlt-keys)
-                     (dissoc :mlt.boost.factor))
+                     (dissoc :mlt.boost.factor :mlt.qf.raw :mlt.boost.factor.raw))
         resp (query client (merge {:defType "edismax"} settings))]
     (assoc resp :interestingTerms mlt-terms :match (:match mlt-resp))))
+
+
+(defn make-term-url
+  [client-config & [trailing-uri]]
+  (create-client-url client-config (str "/schema" trailing-uri)))
+
+
+(comment
+  
+  )
