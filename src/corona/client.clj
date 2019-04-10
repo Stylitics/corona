@@ -274,6 +274,25 @@
 
 ;;; Query
 
+(defn query-handler
+  [client-config handler settings]
+  (let [handler-uri (str "/" (name handler))
+        params (query/format-params settings)]
+    (-> (create-client-url client-config handler-uri)
+        (http/get {:query-params params
+                   :throw-exceptions false
+                   :content-type     :json
+                   :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
+
+(defn query-term-vectors
+  [client-config settings]
+  (query-handler
+   client-config
+   :tvrh
+   (merge query/default-term-vectors-settings settings)))
+
 (defn query
   "Makes and executes solr query from setting map
   Uses solr /select route.
@@ -296,6 +315,11 @@
   added as boost queries to a large set of terms in a boolean query, where each
   term is set to SHOULD occur. That way the terms are boosted based on MLT
   semantics, while it uses the ClassicSimilarity behind the scenes.
+
+  These values will be used to build the boost term queries:
+  tq = new BoostQuery(tq, boostFactor * myScore / bestScore); 
+   e.g. Queue = Term1:100 , Term2:50, Term3:20, Term4:10 
+   => Term1:10 , Term2:5, Term3:2, Term4:1 
 
   settings map:
 
@@ -379,8 +403,6 @@
   ([^SolrClient client settings]
    (->clojure (.query client (query/create-mlt-solr-params settings)))))
 
-;; DEV NOTE: Possible enhancement: https://github.com/DiceTechJobs/RelevancyFeedback#isnt-this-just-the-mlt-handler
-
 
 (defn query-mlt-edismax
   "Like more like this handler query or `query-mlt` but allows edismax params
@@ -396,6 +418,9 @@
 
   :mlt.boost.factor
   to globally change mlt.fl boosts.
+
+  NOTE: To better understand boosting methods, see
+  https://nolanlawson.com/2012/06/02/comparing-boost-methods-in-solr/
   "
   [client settings]
   (let [mlt-q (:mlt.q settings)
@@ -414,11 +439,40 @@
     (assoc resp :interestingTerms mlt-terms :match (:match mlt-resp))))
 
 
-(defn make-term-url
-  [client-config & [trailing-uri]]
-  (create-client-url client-config (str "/schema" trailing-uri)))
+(defn query-mlt-tv-edismax
+  "Like more like this handler query or `query-mlt` but
 
+  - takes top-k terms *PER FIELD*, for more explanations, see
+    https://github.com/DiceTechJobs/RelevancyFeedback#isnt-this-just-the-mlt-handler
 
-(comment
-  
-  )
+  - allows edismax params (e.g. `:boost` `:bf` `:bq` `:qf`)
+    NOTE: To better understand boosting methods, see
+    https://nolanlawson.com/2012/06/02/comparing-boost-methods-in-solr/
+
+  Special settings:
+
+  :mlt.q
+  To reach the matching document to get interesting terms.
+
+  Supported mlt keys: :mlt-fl, :mlt-qf
+
+  IMPORTANT: All mlt.fl fields MUST be set as TermVectors=true in the managedschema
+  for the mlt query to be integrated to main q.
+  "
+  [client-config settings]
+  (let [mlt-q (:mlt.q settings)
+        tv-resp (query-term-vectors
+                 client-config
+                 {:q mlt-q
+                  :fl (:mlt.fl settings)})
+        tv-terms (query/term-vectors-resp->interesting-terms-per-field
+                  tv-resp
+                  (:mlt.qf settings))
+        q (query/tv-terms->q mlt-q tv-terms (:q settings))
+        settings (-> settings
+                     (assoc :q q)
+                     (dissoc query/mlt-keys)
+                     (dissoc :mlt.q))
+        client (create-client client-config)
+        resp (query client (merge {:defType "edismax"} settings))]
+    (assoc resp :interestingTerms tv-terms :match (-> tv-resp :response))))
