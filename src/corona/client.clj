@@ -7,8 +7,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [corona.conversion :refer [->clojure]]
-   [corona.query :as query]
-   [corona.utils :as utils])
+   [corona.query :as query])
   (:import
    (java.io Writer File)
    (java.security InvalidParameterException)
@@ -296,11 +295,13 @@
 (defn query
   "Makes and executes solr query from setting map
   Uses solr /select route.
-  Returns decoded response of solr service."
-  ([settings]
-   (query *client* settings))
-  ([^SolrClient client settings]
-   (->clojure (.query client (query/create-solr-params settings)))))
+  Returns decoded response of solr service.
+  "
+  [client-config settings]
+  (query-handler
+   client-config
+   :select
+   settings))
 
 
 (defn query-mlt
@@ -398,46 +399,11 @@
   :rows
   Number of records to return. Defaults to 10.
   "
-  ([settings]
-   (query-mlt *client* settings))
-  ([^SolrClient client settings]
-   (->clojure (.query client (query/create-mlt-solr-params settings)))))
-
-
-(defn query-mlt-edismax
-  "Like more like this handler query or `query-mlt` but allows edismax params
-  (e.g. `:boost` `:bf` `:bq` `:qf`)
-
-  This query handler runs a MLT query then passes boosted interesting terms
-  to normal edismax query `(query client {:defType \"edismax\" ...})`
-
-  Special settings:
-
-  :mlt.q
-  To reach the matching document to get interesting terms for.
-
-  :mlt.boost.factor
-  to globally change mlt.fl boosts.
-
-  NOTE: To better understand boosting methods, see
-  https://nolanlawson.com/2012/06/02/comparing-boost-methods-in-solr/
-  "
-  [client settings]
-  (let [mlt-q (:mlt.q settings)
-        mlt-settings (when mlt-q (query/build-internal-mlt-settings settings))
-        mlt-resp (when mlt-q (query-mlt client mlt-settings))
-        mlt-terms (cond-> (query/mlt-resp->terms mlt-resp)
-                    (:mlt.boost settings) (query/boost-terms
-                                           (:mlt.qf settings)
-                                           (:mlt.boost.factor settings)))
-        q (query/mlt-terms->q mlt-q mlt-terms (:q settings))
-        settings (-> settings
-                     (assoc :q q)
-                     (dissoc query/mlt-keys)
-                     (dissoc :mlt.boost.factor :mlt.qf.raw :mlt.boost.factor.raw))
-        resp (query client (merge {:defType "edismax"} settings))]
-    (assoc resp :interestingTerms mlt-terms :match (:match mlt-resp))))
-
+  [client-config settings]
+  (query-handler
+   client-config
+   :mlt
+   settings))
 
 (defn query-mlt-tv-edismax
   "Like more like this handler query or `query-mlt` but
@@ -473,6 +439,5 @@
                      (assoc :q q)
                      (dissoc query/mlt-keys)
                      (dissoc :mlt.q))
-        client (create-client client-config)
-        resp (query client (merge {:defType "edismax"} settings))]
+        resp (query client-config (merge {:defType "edismax"} settings))]
     (assoc resp :interestingTerms tv-terms :match (-> tv-resp :response))))
