@@ -95,6 +95,7 @@
   [mlt-resp]
   (->> mlt-resp
        :interestingTerms
+       (partition 2)
        (mapv (fn [[field+term score]]
                (let [[field term] (string/split field+term #"\:")]
                  [field term score])))))
