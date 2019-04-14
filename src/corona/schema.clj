@@ -96,7 +96,7 @@
   Usage:
 
   (add-field!
-   {:type :http :core :replacements}
+   {:type :http :core :tmdb}
    {:name \"id\"
     :type \"pint\"
     :stored true
@@ -105,7 +105,7 @@
   ;; add multiple fields at once
 
   (add-field!
-   {:type :http :core :replacements}
+   {:type :http :core :tmdb}
    [{:name \"id\"
      :type \"pint\"
      :stored true
@@ -125,7 +125,7 @@
 
   Usage:
   (replace-field!
-   {:type :http :core :replacements}
+   {:type :http :core :tmdb}
    {:name \"id\"
     :type \"string\"
     :stored true
@@ -183,7 +183,7 @@
       (json/read-str :key-fn keyword)))
 
 (comment
-  (def conn {:type :http :core :replacements})
+  (def conn {:type :http :core :tmdb})
 
   (add-field-type!
    conn

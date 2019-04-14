@@ -6,49 +6,20 @@
    [clojure.data.json :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [corona.conversion :refer [->clojure]]
-   [corona.query :as query])
-  (:import
-   (java.io Writer File)
-   (java.security InvalidParameterException)
-   (java.util Collection HashMap)
-   (org.apache.commons.io FileUtils)
-   (org.apache.solr.client.solrj SolrClient)
-   (org.apache.solr.client.solrj.embedded EmbeddedSolrServer)
-   (org.apache.solr.client.solrj.impl HttpSolrClient$Builder)
-   (org.apache.solr.common SolrInputDocument)
-   (org.apache.solr.core CoreContainer SolrResourceLoader)))
+   [corona.query :as query]
+   [clojure.string :as string]))
 
 
 ;;; Client (connexion to server)
 
-(declare ^:dynamic *client*)
-
-#_(ns soleil.client
-  ^{:doc "A clojure library for Apache Solr." :author "Matt Lehman"}
-  (:import [java.io File]
-           [org.apache.solr.client.solrj.impl CommonsHttpSolrServer]))
-
-(def default-embedded-config
-  {:type :embedded
-   :solr-config "solr.xml"
-   :dir (or (System/getenv "SOLR_HOME")
-            (str (System/getProperty "user.home") "/solr-7.6.0")
-            "./solr")
-   :connection-timeout 10000
-   :socket-timeout     60000
-   ;;:core ""
-   })
-
 (def default-http-config
+  "Needs a custom :core value"
   {:type :http
    :host "127.0.0.1" ;"localhost"
    :port 8983
    :path "/solr"
    ;;:core ""
    })
-
-(defmulti create-client* :type)
 
 (defn create-client-url
   "Usage:
@@ -63,66 +34,6 @@
   [config & [uri]]
   (create-client-url (assoc config :core :admin) uri))
 
-(defmethod create-client* :http [config]
-  (let [{:keys [connection-timeout socket-timeout] :as config}
-        (merge default-http-config config)]
-    (-> (create-client-url config)
-        (HttpSolrClient$Builder.)
-        (.withConnectionTimeout (or connection-timeout 10000))
-        (.withSocketTimeout (or socket-timeout 60000))
-        (.build))))
-
-;; The EmbeddedSolrServer class provides an implementation of the
-;; SolrClient client API talking directly to an micro-instance of
-;; Solr running directly in your Java application.
-
-;; The embedded server is recommended when you need a simple solution
-;; that is not distributed (e.g. unit and integration tests, development
-;; databases)
-
-;; Please note:
-;; If you don't now if you need a dedicated server fell free to start
-;; with the embedded version and enjoy simplified configuration and
-;; setup and a minor performance increase.
-;; Once you need a stand alone server, just change some lines of code
-;; and the rest stays the same.
-
-(defmethod create-client* :embedded [config]
-  (let [{:keys [dir core]} (merge default-embedded-config config)
-        container (CoreContainer. dir)]
-    (EmbeddedSolrServer. container (name core))))
-
-(defmethod create-client* :http [config]
-  (let [{:keys [connection-timeout socket-timeout] :as config}
-        (merge default-http-config config)]
-    (-> (create-client-url config)
-        (HttpSolrClient$Builder.)
-        (.withConnectionTimeout (or connection-timeout 10000))
-        (.withSocketTimeout (or socket-timeout 60000))
-        (.build))))
-
-(defmethod create-client* :default [config]
-  (create-client* (assoc config :type :http)))
-
-(defn ^SolrClient create-client
-  "Constructs a SolrClient with a configuration map.
-    :type - The implementation of SolrClient to create.
-   Additional parameters depending on type:
-    :http - CommonsHttpSolrServer
-     :host - The base URL of the Solr server. Defaults to 127.0.0.1.
-     :port - The port of the Solr server. Defaults to 8983.
-     :path - The path to the Solr to the index. Defaults to SOLR_HOME env value or '/solr'.
-     :core - Solr Core collection
-    :embedded - EmbeddedSolrServer
-     :solr-config - The solr configuration file. Defaults to 'solr.xml'.
-     :dir - The directory path. Defaults to './solr'
-     :core - Solr Core collection"
-  [conf]
-  (create-client* conf))
-
-(defmacro with-client [^SolrClient client & body]
-  `(binding [*client* ~client]
-     ~@body))
 
 ;;; Core Admin
 
@@ -183,92 +94,168 @@
         not-empty)))
 
 (comment
-  ;; Http Solr Example
-  (def client (create-client {:type :http :core :tmdb}))
-  ;; Embedded Solr Example
-  (def client (create-client {:type :embedded :core :tmdb}))
   (create-core! {:type :http :core :tmdb})
   (delete-core! {:type :http :core :tmdb})
   (get-core-status-details {:type :http :core :item})
   )
 
-;;; Update
+;;; Index Updates
+;; Index Handlers are Request Handlers designed to add, delete and update
+;; documents to the index. In addition to having plugins for importing rich
+;; documents using Tika or from structured data sources using the Data Import
+;; Handler, Solr natively supports indexing structured documents with the
+;; following API.
+;; Source: https://lucene.apache.org/solr/guide/7_6/uploading-data-with-index-handlers.html#json-formatted-index-updates
 
-;; this prevents ugly error "Field is not compatible to map entry" while printing doc
+(defn update!
+  "Sends JSON Update Commands.
+  In general, the JSON update syntax supports all of the update commands that
+  the XML update handler supports, through a straightforward mapping. Multiple
+  commands, adding and deleting documents, may be contained in one message.
 
-(defn commit!
-  "Commits documents uploaded by 'client'
-  and returns solr service decoded response.
-  NOTE: this should be added at the end of any update operation"
-  ([]
-   (commit! *client*))
-  ([^SolrClient client]
-   (->clojure (.commit client))))
+  Usage:
 
+  (update! client-config {:delete {:id \"id1\"}})
 
-(defmethod print-method SolrInputDocument [doc ^Writer w]
-  (.write w (str "#object[org.apache.solr.common.SolrInputDocument "
-                 (.values doc)
-                 ">")))
+  (update! client-config {:add {:commitWithin 5000,
+                                :overwrite false
+                                :doc {:f1 \"v1\"
+                                      :f2 \"v2\"}}})
 
-(defn create-doc!
-  "Creates solr document from generic 'document-map'.
-  Returns SolrInputDocument object."
-  ^SolrInputDocument [document-map]
-  (reduce-kv (fn [^SolrInputDocument doc k v]
-               (cond
-                 (map? v)
-                 (throw (UnsupportedOperationException.
-                         (str "Field " k " has unsupported value: " (pr-str v))))
-
-                 (seq? v)
-                 (if (empty? v)
-                   doc
-                   (doto doc
-                     (.addField (name k) (into-array (-> v first type) v))))
-
-                 :else (doto doc (.addField (name k) v))))
-             (SolrInputDocument. (make-array String 0))
-             document-map))
+  Source: https://lucene.apache.org/solr/guide/6_6/uploading-data-with-index-handlers.html#UploadingDatawithIndexHandlers-SendingJSONUpdateCommands
+  "
+  [client-config settings]
+  (let [uri (cond-> "/update")]
+    (-> (create-client-url client-config "/update")
+        (http/post {:throw-exceptions false
+                    :body             (json/write-str settings)
+                    :content-type     :json
+                    :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
 
 (defn add!
   "Uploads 'doc-or-docs' (map or vector of maps) to solr using opened 'client'.
-  Docs uploaded in pending status, but could be auto committed depending on solr settings.
+  Docs uploaded in pending status, do not auto commit unless mentioned in settings.
   Returns decoded response of service.
-  NOTE: needs explicit (commit! client) after it"
-  ([doc-or-docs]
-   (add! *client* doc-or-docs))
-  ([^SolrClient client doc-or-docs]
-   (if (map? doc-or-docs)
-     (->clojure (.add client (create-doc! doc-or-docs)))
-     (->clojure (.add client ^Collection (mapv create-doc! doc-or-docs))))))
+
+  Usage:
+
+  (add! client-config {:id \"1\"  :title \"title 1\"})
+  (add! client-config [{:id \"1\" :title \"title 1\"}
+                       {:id \"2\" :title \"title 2\"}])
+  (add!
+   client-config
+   [{:id \"1\" :title \"title 1\"}
+    {:id \"2\" :title \"title 2\"}]
+   {:commit true})
+
+  Settings:
+
+  :commit <bool>, default true
+  The :commit operation writes all documents loaded since the last commit to
+  one or more segment files on the disk. Before a commit has been issued,
+  newly indexed content is not visible to searches. The commit operation opens
+  a new searcher, and triggers any event listeners that have been configured.
+  Commits may be triggered from <autocommit> parameters in solrconfig.xml.
+
+  :commitWithin <int>
+  Add the document within the specified number of milliseconds.
+
+  :optimize <bool>
+  The :optimize operation requests Solr to merge internal data structures in
+  order to improve search performance. For a large index, optimization will
+  take some time to complete, but by merging many small segment files into
+  a larger one, search performance will improve. If you are using Solr’s
+  replication mechanism to distribute searches across many systems, be aware
+  that after an optimize, a complete index will need to be transferred.
+  In contrast, post-commit transfers are usually much smaller.
+
+  :overwrite <bool>, default: true
+  Indicates if the unique key constraints should be checked to overwrite
+  previous versions of the same document (see below).
+  "
+  [client-config doc-or-docs & [settings]]
+  (let [docs (if (sequential? doc-or-docs) doc-or-docs [doc-or-docs])]
+    (-> (create-client-url client-config "/update")
+        (http/post {:query-params settings
+                    :throw-exceptions false
+                    :body             (json/write-str docs)
+                    :content-type     :json
+                    :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
 
 (defn delete!
-  "Deletes documents satisfying solr query (just assoc 'options' :q 'query') by 'client'.
-  Returns decoded response of solr service."
-  ([^String q]
-   (delete! *client* q))
-  ([^SolrClient client ^String q]
-   (->clojure (.deleteByQuery client q))))
+  "Usage:
+  (delete! client-config \"id1\")
+  (delete! client-config [\"id2\" \"id3\"])
+  (delete! client-config {:query \"*:*\"})
+  (delete! client-config [\"id2\" \"id3\"] {:commit true})"
+  [client-config id-ids-or-query-map & [settings]]
+  (let [body {:delete id-ids-or-query-map}]
+    (-> (create-client-url client-config "/update")
+        (http/post {:query-params settings
+                    :throw-exceptions false
+                    :body             (json/write-str body)
+                    :content-type     :json
+                    :accept           :json})
+        :body
+        (json/read-str :key-fn keyword))))
+
+(defn commit!
+  "The :commit operation writes all documents loaded since the last commit to
+  one or more segment files on the disk. Before a commit has been issued,
+  newly indexed content is not visible to searches. The commit operation opens
+  a new searcher, and triggers any event listeners that have been configured.
+  Commits may be triggered from <autocommit> parameters in solrconfig.xml.
+
+  Optional Settings:
+
+  :waitSearcher <bool>, default: true
+  Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
+
+  :expungeDeletes <bool>, default: false
+  (commit only) Merges segments that have more than 10% deleted docs, expunging them in the process.
+  "
+  [client-config & [settings]]
+  (update! client-config {:commit (or settings {})}))
+
+(defn optimize!
+  "The :optimize operation requests Solr to merge internal data structures in
+  order to improve search performance. For a large index, optimization will
+  take some time to complete, but by merging many small segment files into
+  a larger one, search performance will improve. If you are using Solr’s
+  replication mechanism to distribute searches across many systems, be aware
+  that after an optimize, a complete index will need to be transferred.
+  In contrast, post-commit transfers are usually much smaller.
+  
+  Optional Settings:
+
+  :waitSearcher <bool>, default: true
+  Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
+
+  :maxSegments <int>, default: 1
+  (optimize only) Merges the segments down to no more than this number of segments.
+  "
+  [client-config bool-or-settings]
+  (update! client-config {:commit bool-or-settings}))
+
 
 (defn clear-index!
   "Deletes all documents in the index by 'client'.
   Returns decoded response of solr service.
-  NOTE: needs explicit (commit! client) after it"
-  ([]
-   (clear-index! *client*))
-  ([^SolrClient client]
-   (delete! client "*:*")))
+  NOTE: needs explicit (commit! client-config) after it"
+  [client-config & [settings]]
+  (delete! client-config {:query "*:*"} settings))
 
 (defn reset!
   "Clears the index and uploads provided doc or docs (map or maps).
   Returns solr service decoded response.
   NOTE: needs explicit (commit! client) after it"
-  ([doc-or-docs]
-   (reset! *client* doc-or-docs))
-  ([^SolrClient client doc-or-docs]
-   (clear-index! client)
-   (add! client doc-or-docs)))
+  [client-config doc-or-docs & [settings]]
+  (clear-index! client-config settings)
+  (add! client-config doc-or-docs settings))
 
 
 ;;; Query
@@ -324,61 +311,59 @@
 
   settings map:
 
-  :q
-  Query terms, defaults to '*:*', or everything.
+  :q <string> default: \"*:*\" (everything)
+  Query terms
 
   :fq
   Filter query, this does not affect the search, only what gets returned
 
-  :mlt.fl
-  The fields to use for similarity. DEFAULT_FIELD_NAMES = \"contents\"
+  :mlt.fl <string>, default: \"contents\"
+  The fields to use for similarity. 
   NOTE: if possible use stored TermVectors in the managedschema file for fields
   (e.g. <field name=\"cat\" ... termVectors=\"true\" />)
   If termVectors are not stored, MoreLikeThis will generate terms from stored fields.
 
-  :mlt.mintf
+  :mlt.mintf <int>, default: 2
   Minimum Term Frequency - the frequency below which terms will be
-  ignored in the source doc. DEFAULT_MIN_TERM_FREQ = 2
+  ignored in the source doc. 
   NOTE: Getting good MLT results require some fine-tuning based on experimentation,
   in particular mlt.mintf. Start low and slowly increase until you start getting
   results that \"feel right\".
 
-  :mlt.mindf
+  :mlt.mindf <int>, default: 5
   Minimum Document Frequency - the frequency at which words will be
-  ignored which do not occur in at least this many docs. DEFAULT_MIN_DOC_FREQ = 5
+  ignored which do not occur in at least this many docs.
 
-  :mlt.minwl
-  Minimum word length below which words will be ignored. DEFAULT_MIN_WORD_LENGTH = 0
+  :mlt.minwl <int>, default: 0
+  Minimum word length below which words will be ignored.
 
-  :mlt.maxwl
-  Maximum word length above which words will be ignored. DEFAULT_MAX_WORD_LENGTH = 0
+  :mlt.maxwl <int>, default: 0
+  Maximum word length above which words will be ignored.
 
-  :mlt.maxqt
+  :mlt.maxqt <int>, default: 25
   Maximum number of query terms that will be included in any generated query.
-  DEFAULT_MAX_QUERY_TERMS = 25
 
-  :mlt.maxntp
+  :mlt.maxntp <int>, default: 5000
   Maximum number of tokens to parse in each example doc field that is not stored
-  with TermVector support. DEFAULT_MAX_NUM_TOKENS_PARSED = 5000
+  with TermVector support.
 
-  :mlt.boost
+  :mlt.boost <bool>, default: false
   [true/false] set if the query will be boosted by the interesting term relevance.
-  DEFAULT_BOOST = false
-
+  
   :mlt.qf
   Query fields and their boosts using the same format as that used in
   DisMaxQParserPlugin. These fields must also be specified in mlt.fl.
 
-  :mlt.match.include
+  :mlt.match.include <bool>, default: true
   Specifies whether or not the response should include the matched document
-  under :match key. Default: true
+  under :match key.
 
   :mlt.match.offset
   Specifies an offset into the main query search results to locate the document
   on which the MoreLikeThis query should operate. By default, the query operates
   on the first result for the q parameter.
 
-  :mlt.interestingTerms
+  :mlt.interestingTerms <[\"list\", \"none\", \"details\"]>
   Controls how the MoreLikeThis component presents the \"interesting\" terms
   (the top TF/IDF terms) for the query. Supports three values.
   - \"list\" : lists the terms.
@@ -390,14 +375,14 @@
   Fields to return. We force 'id' to be returned so that there is a unique
   identifier with each record.
 
-  :wt
-  Data type returned, defaults to 'json'
+  :wt <enum>, default: \"json\"
+  Data type returned.
 
-  :start
-  Record to start at, default to beginning.
+  :start <int>, default: 0
+  Record to start at
 
-  :rows
-  Number of records to return. Defaults to 10.
+  :rows <int>, default: 10
+  Number of records to return.
   "
   [client-config settings]
   (query-handler
@@ -417,7 +402,7 @@
 
   Special settings:
 
-  :mlt.q
+  :mlt.q <string>
   To reach the matching document to get interesting terms.
 
   Supported mlt keys: :mlt-fl, :mlt-qf

@@ -5,7 +5,7 @@
    [clojure.string :as string]
    [corona.client :as client]))
 
-;;; NOTE: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
+;;; FIXME: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
 
 
 ;;; Feature Engineering

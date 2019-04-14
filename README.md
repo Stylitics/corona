@@ -37,6 +37,10 @@ Clojure Solr wrapper (pre-alpha stage, expect API to break)
 ### TEMP: Building private repo
 Source your env vars and run `lein deploy private1`
 
+### ROADMAP:
+
+* bring cljs compatibility by replacing clj-http to cljs-ajax (or similar) as it exposes the same interface (where useful) in both Clojure and ClojureScript.
+
 ## License
 
 This library is available to use under MIT license.

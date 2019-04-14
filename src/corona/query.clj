@@ -1,15 +1,7 @@
 (ns corona.query
   (:require [clojure.string :as string]
             [clj-http.client :as http]
-            [clojure.data.json :as json])
-  (:import [org.apache.solr.common.params MultiMapSolrParams CommonParams]
-           [org.apache.solr.client.solrj.request QueryRequest]
-           [org.apache.solr.client.solrj SolrRequest$METHOD]
-           (java.util HashMap)))
-
-(def method-map
-  {:get  SolrRequest$METHOD/GET
-   :post SolrRequest$METHOD/POST})
+            [clojure.data.json :as json]))
 
 
 ;;; Params
@@ -35,25 +27,8 @@
    {}
    m))
 
-(defn- format-java-values
-  [v]
-  (into-array (format-values v)))
 
-
-(defn create-solr-params ^MultiMapSolrParams
-  [m]
-  (MultiMapSolrParams.
-    (reduce-kv (fn [^HashMap hm k v]
-                 (doto hm
-                   (.put (format-param k) (format-java-values v))))
-               (HashMap.) m)))
-
-(defn create-mlt-solr-params
-  [m]
-  (create-solr-params (update m CommonParams/QT #(if % % "/mlt"))))
-
-
-;;; Settings 
+;;; Settings
 
 (def default-term-vectors-settings
   {:tv true
