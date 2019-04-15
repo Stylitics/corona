@@ -13,10 +13,7 @@
                  [clj-http "3.9.1"]
                  [me.raynes/fs "1.4.6"]
                  [ring/ring-codec "1.1.1"]]
-  :plugins [[s3-wagon-private "1.3.1"]]
-  :repositories [["private1" {:url "s3p://stylitics.clojure/corona/releases/"
-                              :no-auth true}]]
   :source-paths ["src"]
-  :java-source-paths ["jsrc"]
+  :profiles {:uberjar {:aot :all}}
   :main corona.client
 )
