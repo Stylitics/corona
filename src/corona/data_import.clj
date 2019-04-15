@@ -1,14 +1,16 @@
 (ns corona.data-import
   (:require
-   [clj-http.client :as http]
-   [ring.util.codec :refer [form-encode]]
-   [corona.client :as client]))
+   [clojure.data.json :as json]
+   [corona.utils :as utils]
+   [cuerdas.core :as cstr]
+   [org.httpkit.client :as http]
+   [ring.util.codec :refer [form-encode]]))
 
 ;; Docs source: https://smarttechie.org/2014/01/30/how-to-work-with-apache-solr-rest-apis/
 
 (defn make-data-import-base-url
   [client-config & [trailing-uri]]
-  (client/create-client-url client-config (str "/dataimport" trailing-uri)))
+  (utils/create-client-url client-config (str "/dataimport" trailing-uri)))
 
 (defn full-import!
   "This will start the new indexing thread to index the data.
@@ -18,14 +20,12 @@
   :entity – This tells the Solr to index which entity to index. If nothing is passed all the entities are executed.
   :optimize – The default value is true. This tells whether to optimize the index after the operation.
   "
-  [client-config {:keys [clean commit debug entity optimize] :as params}]
-  (let [uri (cond-> "?command=full-import" 
-              (boolean? clean)    (str "&clean="    (str clean))
-              (boolean? commit)   (str "&commit="   (str commit))
-              (boolean? debug)    (str "&debug="    (str debug))
-              entity              (str "&entity="   (name entity))
-              (boolean? optimize) (str "&optimize=" (str optimize)))]
-    (http/get (make-data-import-base-url client-config uri))))
+  [client-config {:keys [clean commit debug entity optimize] :as settings}]
+  (let [url (make-data-import-base-url client-config)
+        options {:query-params (merge settings {:command "full-import"})
+                 :as :auto}
+        {:keys [body]} @(http/get url options)]
+    (json/read-str body :key-fn keyword)))
 
 (defn delta-import!
   "This will the changes and index only the changes happened from the last full-import.
@@ -35,26 +35,36 @@
   :entity – This tells the Solr to index which entity to index. If nothing is passed all the entities are executed.
   :optimize – The default value is true. This tells whether to optimize the index after the operation.
   "
-  [client-config {:keys [clean commit debug entity optimize] :as params}]
-  (let [uri (cond-> "?command=delta-import" 
-              (boolean? clean)    (str "&clean="    (str clean))
-              (boolean? commit)   (str "&commit="   (str commit))
-              (boolean? debug)    (str "&debug="    (str debug))
-              entity              (str "&entity="   (name entity))
-              (boolean? optimize) (str "&optimize=" (str optimize)))]
-    (http/get (make-data-import-base-url client-config uri))))
+  [client-config {:keys [clean commit debug entity optimize] :as settings}]
+  (let [url (make-data-import-base-url client-config)
+        options {:query-params (merge settings {:command "delta-import"})
+                 :as :auto}
+        {:keys [body]} @(http/get url options)]
+    (json/read-str body :key-fn keyword)))
 
 (defn abort!
   "Aborts the running process. Useful to stop indexing process."
   [client-config]
-  (http/get (make-data-import-base-url client-config "?command=abort")))
+  (let [url (make-data-import-base-url client-config)
+        options {:query-params {:command "abort"}
+                 :as :auto}
+        {:keys [body]} @(http/get url options)]
+    (json/read-str body :key-fn keyword)))
 
 (defn reload-config!
   "Reloads the configuration, catching changes to it without the need to restart Solr."
   [client-config]
-  (http/get (make-data-import-base-url client-config "?command=reload-config")))
+  (let [url (make-data-import-base-url client-config)
+        options {:query-params {:command "reload-config"}
+                 :as :auto}
+        {:keys [body]} @(http/get url options)]
+    (json/read-str body :key-fn keyword)))
 
 (defn status
   "Returns the statistics on number of documents indexed, no of documents deleted etc."
   [client-config]
-  (http/get (make-data-import-base-url client-config "?command=status")))
+  (let [url (make-data-import-base-url client-config)
+        options {:query-params {:command "status"}
+                 :as :auto}
+        resp @(http/get url options)]
+    (update resp :body json/read-str :key-fn #(-> % cstr/kebab keyword))))

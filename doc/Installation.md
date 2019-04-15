@@ -40,10 +40,7 @@ Notes:
 
 Here is what worked for me 
 ### 3. Add corona library in project.clj
-
-```clojure
-[corona "0.1.0-snapshot"] ;; version maybe outdated
-```
+[![Clojars Project](https://img.shields.io/clojars/v/corona.svg)](https://clojars.org/corona)
 
 ### 4. Test solr
 From clojure repl, make sure you are seeing `SOLR_HOME` variable. 

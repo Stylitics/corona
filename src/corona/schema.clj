@@ -1,11 +1,9 @@
 (ns corona.schema
   (:require
-   [clj-http.client :as http]
+   [org.httpkit.client :as http]
    [clojure.data.json :as json]
    [clojure.string :as string]
-   [corona.client :as client]
-   [corona.cmd :as cmd]
-   [corona.data-import :as data-import]))
+   [corona.utils :as utils]))
 
 ;; TODO: integrate more fns and helpers from https://lucene.apache.org/solr/guide/7_6/schema-api.html
 
@@ -33,17 +31,14 @@
 
 (defn make-schema-url
   [client-config & [trailing-uri]]
-  (client/create-client-url client-config (str "/schema" trailing-uri)))
+  (utils/create-client-url client-config (str "/schema" trailing-uri)))
 
 
 (defn get-fields
   [client-config]
-  (-> (make-schema-url client-config "/fields")
-      (http/get {:throw-exceptions false
-                 :content-type     :json
-                 :accept           :json})
-      :body
-      (json/read-str :key-fn keyword)))
+  (let [url (make-schema-url client-config "/fields")
+        {:keys [body]} @(http/get url {:as :auto})]
+    (json/read-str body :key-fn keyword)))
 
 
 (defn update-field!
@@ -77,13 +72,12 @@
   NOTE: only supported with :http config type.
   "
   [client-config body]
-   (-> (make-schema-url client-config)
-       (http/post {:throw-exceptions false
-                   :body             (json/write-str body)
-                   :content-type     :json
-                   :accept           :json})
-       :body
-       (json/read-str :key-fn keyword)))
+  (let [url (make-schema-url client-config)
+        options {:body         (json/write-str body)
+                 :content-type :json
+                 :as           :auto}
+        {:keys [body]} @(http/get url options)]
+    (json/read-str body :key-fn keyword)))
 
 
 ;;; Update methods sugar
@@ -175,9 +169,6 @@
 
 (defn get-field-types
   [client-config]
-  (-> (make-schema-url client-config "/fieldtypes")
-      (http/get {:throw-exceptions false
-                 :content-type     :json
-                 :accept           :json})
-      :body
-      (json/read-str :key-fn keyword)))
+  (let [url (make-schema-url client-config "/fieldtypes")
+        {:keys [body]} @(http/get url {:as :auto})]
+    (json/read-str body :key-fn keyword)))

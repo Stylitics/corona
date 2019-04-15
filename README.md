@@ -1,6 +1,8 @@
 # corona
 Clojure Solr wrapper (pre-alpha stage, expect API to break)
 
+[![Clojars Project](https://img.shields.io/clojars/v/corona.svg)](https://clojars.org/corona)
+
 ## Why?
 
 ### Why use Solr?

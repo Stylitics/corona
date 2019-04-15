@@ -1,9 +1,9 @@
 (ns corona.ltr
   (:require
-   [clj-http.client :as http]
    [clojure.data.json :as json]
    [clojure.string :as string]
-   [corona.client :as client]))
+   [corona.utils :as utils]
+   [org.httpkit.client :as http]))
 
 ;;; FIXME: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
 
@@ -63,7 +63,7 @@
 
 (defn make-feature-store-url
   [client-config & [uri]]
-  (client/create-client-url
+  (utils/create-client-url
    client-config
    (str "/schema/feature-store" (when uri (str "/" uri)))))
 
@@ -72,11 +72,10 @@
    executing HTTP DELETE request to feature-store-url built from client-config
    Returns json-decoded body of response."
   [client-config & [store-name]]
-  (-> (make-feature-store-url client-config (or store-name "_DEFAULT_"))
-      (http/delete {:throw-exceptions false
-                    :accept           :json})
-      :body
-      (json/read-str :key-fn keyword)))
+  (let [uri (or store-name "_DEFAULT_")
+        url (make-feature-store-url client-config uri)
+        {:keys [body]} @(http/delete url {:as :auto})]
+    (json/read-str body :key-fn keyword)))
 
 (defn upload-features!
   "Uploads vector of feature descriptions 'features' to solr.
@@ -85,13 +84,12 @@
   Returns json-decoded body of response."
   [client-config features]
   (delete-feature-store! client-config (-> features first :store))
-  (-> (make-feature-store-url client-config)
-      (http/put {:throw-exceptions false
-                 :body             (json/write-str features)
+  (let [url (make-feature-store-url client-config)
+        options {:body             (json/write-str features)
                  :content-type     :json
-                 :accept           :json})
-      :body
-      (json/read-str :key-fn keyword)))
+                 :as               :auto}
+        {:keys [body]} @(http/put url options)]
+    (json/read-str body :key-fn keyword)))
 
 
  ;;; Feature extraction
@@ -101,15 +99,15 @@
   :<document index key> (e.g. :id)
   :features - vector of features values for given document"
   [client-config {:keys [q rows sort fl store]}]
-  (let [sorl-core-url (client/create-client-url client-config)
+  (let [sorl-core-url (utils/create-client-url client-config)
         url (str sorl-core-url
                  "/query?q=" (or q "*:*")
                  "&rows=" (or rows "10000")
                  "&sort=" (or sort "id asc")
                  "&fl=" (or fl "id")
                  ",[features store=" store "]")
-        docs (-> (http/get url {:accept :json})
-                 :body
+        {:keys [body]} @(http/get url {:accept :json})
+        docs (-> body
                  (json/read-str :key-fn (fn [k] (if (= k "[features]")
                                                   :features
                                                   (keyword k))))
@@ -166,7 +164,7 @@
 
 (defn make-model-store-base-url
   [client-config]
-  (client/create-client-url client-config "/schema/model-store"))
+  (utils/create-client-url client-config "/schema/model-store"))
 
 (defn delete-model!
   "Deletes EXISTING ltr model with name 'model-name' from solr
@@ -174,12 +172,10 @@
   WARN: solr can hang on attempt on deleting nonexistent model.
   Returns json-decoded body of response."
   [client-config model-name]
-  (->
-   (http/delete (str (make-model-store-base-url client-config) "/" model-name)
-                 {:throw-exceptions false
-                  :accept           :json})
-    :body
-    (json/read-str :key-fn keyword)))
+  (let [uri (str "/" model-name)
+        url (make-model-store-base-url client-config uri)
+        {:keys [body]} @(http/delete url {:as :auto})]
+    (json/read-str body :key-fn keyword)))
 
 (defn upload-model!
   "Uploads 'model' as ltr model to solr, json-encoding it previously,
@@ -187,10 +183,9 @@
   Returns json-decoded body of response.
   NOTE: only supported with :http config type."
   [client-config model]
-  (-> (make-model-store-base-url client-config)
-      (http/put {:throw-exceptions false
-                 :body             (json/write-str model)
+  (let [url (make-model-store-base-url client-config)
+        options {:body             (json/write-str model)
                  :content-type     :json
-                 :accept           :json})
-      :body
-      (json/read-str :key-fn keyword)))
+                 :as               :auto}
+        {:keys [body]} @(http/put url options)]
+    (json/read-str body :key-fn keyword)))
