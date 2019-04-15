@@ -2,11 +2,7 @@
   (:require
    [clj-http.client :as http]
    [ring.util.codec :refer [form-encode]]
-   [corona.client :as client])
-  (:import
-   (org.apache.solr.handler.dataimport
-    DataImportHandler
-    EventListener)))
+   [corona.client :as client]))
 
 ;; Docs source: https://smarttechie.org/2014/01/30/how-to-work-with-apache-solr-rest-apis/
 

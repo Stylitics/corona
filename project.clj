@@ -2,11 +2,6 @@
   :description "A clojure wrapper Solr client"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.apache.solr/solr-solrj "7.6.0"]
-                 [org.apache.lucene/lucene-core "7.6.0"]
-                 [org.apache.solr/solr-core "7.6.0"]
-                 [org.apache.solr/solr-dataimporthandler "7.6.0"]
-                 [org.apache.solr/solr-ltr "7.6.0"]
                  [org.clojure/data.csv "0.1.4"]
                  [org.clojure/data.json "0.2.6"]
                  [commons-io/commons-io "2.6"]
