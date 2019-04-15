@@ -93,11 +93,6 @@
         core
         not-empty)))
 
-(comment
-  (create-core! {:type :http :core :tmdb})
-  (delete-core! {:type :http :core :tmdb})
-  (get-core-status-details {:type :http :core :item})
-  )
 
 ;;; Index Updates
 ;; Index Handlers are Request Handlers designed to add, delete and update
