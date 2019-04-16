@@ -37,7 +37,7 @@
   (let [url (utils/create-client-url client-config "/update")
         options {:throw-exceptions false
                  :body             (json/write-str settings)
-                 :content-type     :json
+                 :headers          {"Content-Type" "application/json"}
                  :as               :auto}
         {:keys [body]} @(http/post url options)]
     (json/read-str body :key-fn keyword)))
@@ -88,7 +88,7 @@
         url (utils/create-client-url client-config "/update")
         options {:query-params settings
                  :body         (json/write-str docs)
-                 :content-type :json
+                 :headers      {"Content-Type" "application/json"}
                  :as           :auto}
         {:keys [body]} @(http/post url options)]
     (json/read-str body :key-fn keyword)))
@@ -105,7 +105,7 @@
         url (utils/create-client-url client-config "/update")
         options {:query-params settings
                  :body         (json/write-str body)
-                 :content-type :json
+                 :headers      {"Content-Type" "application/json"}
                  :as           :auto}
         {:keys [body]} @(http/post url options)]
     (json/read-str body :key-fn keyword)))

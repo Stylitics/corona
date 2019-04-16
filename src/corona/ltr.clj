@@ -85,9 +85,9 @@
   [client-config features]
   (delete-feature-store! client-config (-> features first :store))
   (let [url (make-feature-store-url client-config)
-        options {:body             (json/write-str features)
-                 :content-type     :json
-                 :as               :auto}
+        options {:body    (json/write-str features)
+                 :headers {"Content-Type" "application/json"}
+                 :as      :auto}
         {:keys [body]} @(http/put url options)]
     (json/read-str body :key-fn keyword)))
 
@@ -184,8 +184,8 @@
   NOTE: only supported with :http config type."
   [client-config model]
   (let [url (make-model-store-base-url client-config)
-        options {:body             (json/write-str model)
-                 :content-type     :json
-                 :as               :auto}
+        options {:body    (json/write-str model)
+                 :headers {"Content-Type" "application/json"}
+                 :as      :auto}
         {:keys [body]} @(http/put url options)]
     (json/read-str body :key-fn keyword)))

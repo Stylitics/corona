@@ -74,7 +74,7 @@
   [client-config body]
   (let [url (make-schema-url client-config)
         options {:body         (json/write-str body)
-                 :content-type :json
+                 :headers      {"Content-Type" "application/json"}
                  :as           :auto}
         {:keys [body]} @(http/get url options)]
     (json/read-str body :key-fn keyword)))
