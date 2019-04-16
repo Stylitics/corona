@@ -155,11 +155,3 @@
   NOTE: needs explicit (commit! client-config) after it"
   [client-config & [settings]]
   (delete! client-config {:query "*:*"} settings))
-
-(defn reset!
-  "Clears the index and uploads provided doc or docs (map or maps).
-  Returns solr service decoded response.
-  NOTE: needs explicit (commit! client) after it"
-  [client-config doc-or-docs & [settings]]
-  (clear! client-config settings)
-  (add! client-config doc-or-docs settings))
