@@ -36,9 +36,11 @@ Clojure Solr wrapper (pre-alpha stage, expect API to break)
 
 ## Development 
 
+PR welcome!
+
 ### ROADMAP:
 
-* bring cljs compatibility by replacing clj-http to cljs-ajax (or similar) as it exposes the same interface (where useful) in both Clojure and ClojureScript.
+(soon!) 
 
 ## License
 
