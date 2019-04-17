@@ -76,7 +76,7 @@
         options {:body         (json/write-str body)
                  :headers      {"Content-Type" "application/json"}
                  :as           :auto}
-        {:keys [body]} @(http/get url options)]
+        {:keys [body]} @(http/post url options)]
     (json/read-str body :key-fn keyword)))
 
 
