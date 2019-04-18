@@ -3,17 +3,19 @@
    [clojure.data.json :as json]
    [clojure.string :as string]
    [corona.utils :as utils]
-   [org.httpkit.client :as http]))
+   [org.httpkit.client :as http]
+   [ring.util.codec :as codec]))
 
 
 ;;; Params
 
 (defn format-param
   [p]
-  (cond
-    (and (sequential? p) (number? (last p))) (string/join "^" p)
-    (keyword? p) (name p)
-    :else (str p)))
+  (codec/url-encode
+   (cond
+     (and (sequential? p) (number? (last p))) (string/join "^" p)
+     (keyword? p) (name p)
+     :else (str p))))
 
 (defn format-values
   [v]
@@ -326,3 +328,8 @@
                      (dissoc :mlt.q))
         resp (query client-config (merge {:defType "edismax"} settings))]
     (assoc resp :interestingTerms tv-terms :match (-> tv-resp :response))))
+
+(comment
+
+  (json/read-str nil :key-fn keyword)
+  )
