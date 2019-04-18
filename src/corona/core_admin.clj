@@ -78,7 +78,7 @@
                  :as :auto}
         url (utils/create-admin-url client-config "/cores")
         {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+    (when body (json/read-str body :key-fn keyword))))
 
 
 (defn delete!
@@ -106,7 +106,7 @@
                  :as :auto}
         url (utils/create-admin-url client-config "/cores")
         {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+    (when body (json/read-str body :key-fn keyword))))
 
 
 (defn status
@@ -131,7 +131,7 @@
                  :as :auto}
         url (utils/create-admin-url client-config "/cores")
         {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+    (when body (json/read-str body :key-fn keyword))))
 
 
 (defn status-details
@@ -143,4 +143,5 @@
         :status
         core
         not-empty)))
+
 
