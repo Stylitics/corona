@@ -136,9 +136,10 @@
         (string/join " ")))
 
 (defn tv-terms->q
-  [tv-q tv-terms & [q]]
+  [tv-terms & [q]]
   (let [tv-terms-str (terms-per-field->q tv-terms)]
-    (format "-%s %s %s" tv-q tv-terms-str q)))
+    (cond->> (format "(%s)" tv-terms-str)
+      (seq q) (str q " "))))
 
 (defn terms->q
   ""
@@ -316,9 +317,11 @@
         tv-terms (term-vectors-resp->interesting-terms-per-field
                   tv-resp
                   (:mlt.qf settings))
-        q (tv-terms->q mlt-q tv-terms (:q settings))
+        q (tv-terms->q tv-terms (:q settings))
+        fq (string/join " " [(:fq settings) (format "-(%s)" mlt-q)])
         settings (-> settings
                      (assoc :q q)
+                     (assoc :fq fq)
                      (dissoc mlt-keys)
                      (dissoc :mlt.q))
         resp (query client-config (merge {:defType "edismax"} settings))]
