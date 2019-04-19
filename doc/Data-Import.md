@@ -1,6 +1,5 @@
 # Importing/Indexing database (PostgreSQL) in Solr using corona.data-import namespace
 
-
 ## Data Importer Setup Instructions
 
 ### 1. Download the JDBC driver 
@@ -49,8 +48,8 @@ Change datasource tag
   url="jdbc:postgresql://localhost:5432/my-db-name
   user="sa" 
   password="secret"/> 
-
 ```
+
 Change document tag:
 ```xml
 <document>
@@ -61,20 +60,19 @@ Change document tag:
     deltaQuery="SELECT id FROM products WHERE updated_at &gt; ${dataimporter.last_index_time}'::timestamp at time zone 'utc'">
     deltaImportQuery="SELECT id,name from products WHERE id='${dataimporter.delta.id}'"
   <field column="id" name="id"/>
-  <field column="name" name="name"/>       
+  <field column="name" name="name"/>
   </entity>
 </document>
-    
 ```
 Assuming that our DB named `my-db-name` and we have table `products` with columns `id`, `name` and `updated_at`.
 
 Column 'updated_at' of datetime type stores the date of last modification of the row.
 This column will be used in incremental import to track rows modified since the last import into Solr.
 
-* The `pk` attribute signals the primary key of db entity
+* The `pk` attribute signals the primary key of db entity.
 * The `query` attribute gives the data needed to populate fields of the Solr document in full-import.
-*	The `deltaQuery` attribute gives the primary keys of the current entity which have changes since the last index time
-* The `deltaImportQuery` attribute gives the data needed to populate fields when running a delta-import
+* The `deltaQuery` attribute gives the primary keys of the current entity which have changes since the last index time.
+* The `deltaImportQuery` attribute gives the data needed to populate fields when running a delta-import.
 
 Full-import command uses the `query` query, delta-import command uses the `delta...` components.
 
