@@ -3,19 +3,17 @@
    [clojure.data.json :as json]
    [clojure.string :as string]
    [corona.utils :as utils]
-   [org.httpkit.client :as http]
-   [ring.util.codec :as codec]))
+   [org.httpkit.client :as http]))
 
 
 ;;; Params
 
 (defn format-param
   [p]
-  (codec/url-encode
-   (cond
-     (and (sequential? p) (number? (last p))) (string/join "^" p)
-     (keyword? p) (name p)
-     :else (str p))))
+  (cond
+    (and (sequential? p) (number? (last p))) (string/join "^" p)
+    (keyword? p) (name p)
+    :else (str p)))
 
 (defn format-values
   [v]
