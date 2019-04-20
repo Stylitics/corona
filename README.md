@@ -1,5 +1,7 @@
 # corona
-Clojure Solr wrapper (pre-alpha stage, expect API to break)
+Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
+
+(pre-alpha stage, expect API to break)
 
 [![Clojars Project](https://img.shields.io/clojars/v/corona.svg)](https://clojars.org/corona)
 
