@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [0.1.3] - 2019-04-20
 ### Changed
 - emacs install doc fix
+- url-encode for feature extraction request
 
 ## [0.1.2] - 2019-04-18
 ### Changed
