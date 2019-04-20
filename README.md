@@ -42,7 +42,9 @@ PR welcome!
 
 ### ROADMAP:
 
-(soon!) 
+- Better custom MLT handler
+- Cover all Schema API 
+
 
 ## License
 
