@@ -14,7 +14,7 @@ Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
 
 ### Why use corona?
 
-* You want to use Solr 7 (soon Solr 8) from the joy of Clojure
+* You want to use Solr 8 from the joy of Clojure
 
 ## Companies
 
