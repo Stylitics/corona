@@ -398,35 +398,3 @@
                      (dissoc :mlt.field :mlt.qf :mlt.ids :mlt.top))
         resp (query client-config (merge {:defType "edismax"} settings))]
     (assoc resp :interestingTerms int-terms :match (-> tv-resp :response))))
-
-(comment
-  (def client-config {:core :tmdb})
-  (let [settings {:defType "edismax"
-                   :q (str "{!cache=false} "
-                            (string/join " " (map #(str "_text_:" %)
-                                                  past-search-queries)))
-                   :now (inst-ms (:release_date bond-spectre-movie))
-                   :bf "recip(ms(NOW,release_date),3.16e-11,1,1)^50"
-                   :fl ["title" "score" "release_date"]
-                   :mlt.fl ["overview" "genres" "title" "keywords"
-                            "production_companies" "production_countries"
-                            "spoken_languages" "director"]
-                   :mlt.field "db_id"
-                   :mlt.ids (into [[(:db_id bond-spectre-movie) 1]]
-                                  (map (juxt :db_id (constantly 1))
-                                       user-last-watched-movies))
-                   :mlt.top 15
-                   :mlt.boost true
-                   :mlt.mintf 1
-                   :mlt.mindf 3
-                   :mlt.minwl 3
-                   :mlt.qf [["genres" 10] ["overview" 6] ["title" 3] ["tagline" 3] ["keywords" 1]]}]
-    (solr.query/query-mlt-tv-edismax client-config settings))
-
-  (query-term-vectors
-   client-config
-   {:q "db_id:206647"
-    :tv.fl ["score" "title"]
-    :tv.all true
-    :rows 1})
-  )
