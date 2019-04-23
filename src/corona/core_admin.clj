@@ -1,4 +1,5 @@
 (ns corona.core-admin
+  (:gen-class)
   (:require
    [clojure.data.json :as json]
    [corona.utils :as utils]
