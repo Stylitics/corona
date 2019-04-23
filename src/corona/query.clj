@@ -24,7 +24,9 @@
   (reduce-kv
    (fn [m k v]
      (let [k* (format-param k)]
-       (assoc m k* (string/join (if (#{"sort" "fl"} k*) "," " ")
+       (assoc m k* (string/join (if (#{"sort" "fl" "tv.fl" "mlt.fl"} k*)
+                                  ","
+                                  " ")
                                 (format-values v)))))
    {}
    m))
@@ -36,11 +38,9 @@
   {:tv true
    :tv.df true
    :tv.tf true
-   ;;:tv.tf_idf true ;(* (Math/pow tf 0.5) (/ 1 df))
+   :tv.tf_idf true ;(* (Math/pow tf 0.5) (/ 1 df))
    :start 0
-   :rows 1
-   ;;:indent true
-   })
+   :rows 1})
 
 (def mlt-keys [:mlt.fl
                :mlt.mintf
@@ -57,89 +57,103 @@
                :mlt.match.offset
                :mlt.interestingTerms])
 
-(defn build-internal-mlt-settings
-  "NOTE: :fl is not considered to get back all keys of matching doc."
-  [settings]
-  (merge (select-keys settings mlt-keys)
-         {:q (:mlt.q settings)
-          :mlt.interestingTerms "details"
-          :fq (:fq settings)}))
-
 
 ;;; Terms
 
-(defn mlt-resp->terms
-  [mlt-resp]
-  (->> mlt-resp
-       :interestingTerms
-       (partition 2)
-       (mapv (fn [[field+term score]]
-               (let [[field term] (string/split field+term #"\:")]
-                 [field term score])))))
+(defn mlt-ids->tv-q
+  [mlt-ids & [mlt-field-name]]
+  (let [ids (if (sequential? (first mlt-ids))
+              (map first mlt-ids)
+              mlt-ids)]
+    (->> ids
+         (map #(str mlt-field-name ":" %))
+         (string/join " "))))
 
-(defn vectorize-qf-element
-  [qf-element]
-  (if (string? qf-element)
-    (-> qf-element
-        (string/split #"\^")
-        ((fn [[qf-field qf-boost-str]]
-           [qf-field (Float/parseFloat qf-boost-str)])))
-    qf-element))
+(defn partition-kvs
+  [[k v & rst]]
+  (into [[k (if (sequential? v) (partition-kvs v) v)]]
+        (when (seq rst) (partition-kvs rst))))
 
-(defn mlt-resp->raw-terms
-  [mlt-resp mlt-qf-raw]
-  (let [matched (->> mlt-resp :match :docs first)]
-    (reduce (fn [mlt-qf-raw match-el]
-              [mlt-qf-raw match-el])
-            mlt-qf-raw
-            matched)))
+(defn tf-idf
+  [tf df]
+  (* (Math/pow tf 0.5) (/ 1 df)))
 
-(defn boost-terms
-  [mlt-terms mlt-qf & [mlt-boost-factor]]
-  (reduce
-   (fn [sim-terms mlt-qf-element]
-     (let [[mlt-qf-field mlt-qf-boost] (vectorize-qf-element mlt-qf-element)]
-       (reduce
-        (fn [acc [field term score :as v]]
-          (conj
-           acc
-           [field term (cond-> score
-                         (= mlt-qf-field field) (* mlt-qf-boost
-                                                   (or mlt-boost-factor 1)))]))
-        []
-        sim-terms)))
-   mlt-terms
-   mlt-qf ;;FIXME: when not there, qf boost one need also mlt.fl ?
-   ))
+(defn qualified-term?
+  [term tf df mintf mindf minwl]
+  (cond
+    (< tf mintf) false
+    (< df mindf) false
+    (< (count term) mindf) false
+    :else true))
+
 
 (defn term-vectors-resp->interesting-terms-per-field
-  "Digests the response from tvrh handler call targetting matching doc id."
-  [tv-resp & [qf top-k]]
-  (let [[id [_ _ & rst]] (:termVectors tv-resp)
-        qf-map (into {} qf)]
-    (for [[field tokens] (partition 2 rst)]
-      [field (take
-              (or top-k 8)
-              (sort-by second >
-                       (for [[token stats] (partition 2 tokens)
-                             :let [[_ tf _ df] stats
-                                   tf-idf (* (Math/pow tf 0.5) (/ 1 df))]]
-                         [token (+ (+ 1 (* 100 tf-idf))
-                                   (or (get qf-map field) 0))])))])))
+  "Digests the response from tvrh handler and creates a interestingTerms map
+  per matching document using mlt special keys."
+  [tv-resp & [{qf :mlt.qf ids :mlt.ids top :mlt.top boost :mlt.boost
+               mintf :mlt.mintf mindf :mlt.mindf minwl :mlt.minwl
+               :or {top 15
+                    mintf 1
+                    mindf 3
+                    minwl 3}}]]
+  (let [term-vectors (dissoc (into {} (partition-kvs (:termVectors tv-resp)))
+                             "warnings")
+        qf-map  (into {} qf)
+        ids-map (into {} ids)]
+    (into
+     {}
+     (mapv
+     (fn [[id fields]]
+       [id (into
+            {}
+            (mapv
+             (fn [[field terms]]
+               (let [scored-terms (map
+                                   (fn [[term stats]]
+                                     (let [{:strs [tf df tf-idf payload]} (into {} stats)]
+                                       (when (qualified-term? term tf df mintf mindf minwl)
+                                         (let [weight (cond
+                                                        payload payload
+                                                        boost tf-idf
+                                                        :else 1)]
+                                           [term weight tf df]))))
+                                   terms)
+                     sorted-terms (sort-by second > (remove nil? scored-terms))
+                     top-terms (take top sorted-terms)
+                     top-terms-count (count top-terms)
+                     top-terms-total-score (reduce (fn [acc term]
+                                                     (+ acc (second term)))
+                                                   0
+                                                   top-terms)
+                     normalized-top-terms (mapv
+                                           (fn [[term score tf df]]
+                                             (let [norm-score (/ score top-terms-total-score)]
+                                               [term
+                                                (* norm-score
+                                                   (or (get qf-map field) 1)
+                                                   (or (get ids-map id) 1))
+                                                tf
+                                                df]))
+                                           top-terms)]
+                 [field normalized-top-terms]))
+             (rest fields) ;removes the ["uniqueKey" "206647"] first kv
+             ))])
+     term-vectors))))
 
 (defn terms-per-field->q
   [terms-map]
   (->>  terms-map
         (mapcat (fn [[field terms]]
-               (map (fn [[term score]] (str field ":" term "^" (or score 1)))
+                  (map (fn [[term score]] (str field ":" term "^" (or score 1)))
                        terms)))
         (string/join " ")))
 
-(defn tv-terms->q
-  [tv-terms & [q]]
-  (let [tv-terms-str (terms-per-field->q tv-terms)]
-    (cond->> (format "(%s)" tv-terms-str)
-      (seq q) (str q " "))))
+(defn interesting-terms-per-field->q
+  [interesting-terms-per-field settings]
+  (->> interesting-terms-per-field
+       vals
+       (map terms-per-field->q)
+       (string/join " ")))
 
 (defn terms->q
   ""
@@ -171,6 +185,46 @@
     (json/read-str body :key-fn keyword)))
 
 (defn query-term-vectors
+  "Settings
+
+  :tv <bool>, default: false
+  If true, the Term Vector Component will run.
+
+  :tv.docIds <sequential>
+  For a list of Lucene document IDs (not the Solr Unique
+  Key), term vectors will be returned.
+
+  :tv.fl <vector>
+  For a given list of fields, term vectors will be returned.
+  If not specified, the fl parameter is used.
+
+  :tv.all <bool>, default: false
+  If true, all the boolean parameters listed below (tv.df, tv.offsets,
+  tv.positions, tv.payloads, tv.tf and tv.tf_idf) will be enabled.
+
+  :tv.df <bool>, default: false
+  If true, returns the Document Frequency (DF) of the term in the collection.
+  This can be computationally expensive.
+
+  :tv.offsets <bool>, default: false
+  If true, returns offset information for each term in the document.
+
+  :tv.positions <bool>, default: false
+  If true, returns position information.
+
+  :tv.payloads <bool>, default: false
+  If true, returns payload information.
+
+  :tv.tf <bool>, default: false
+  If true, returns document term frequency info for each term in the document.
+
+  :tv.tf_idf <bool>, default: false
+  If true, calculates TF / DF (i.e.,: TF * IDF) for each term. Please note that
+  this is a literal calculation of \"Term Frequency multiplied by Inverse
+  Document Frequency\" and not a classical TF-IDF similarity measure.
+  This parameter requires both tv.tf and tv.df to be \"true\". This can be
+  computationally expensive. (The results are not shown in example output)
+  "
   [client-config settings]
   (query-handler
    client-config
@@ -300,34 +354,79 @@
 
   Special settings:
 
-  :mlt.q <string>
-  To reach the matching document to get interesting terms.
+  :mlt.field <string>, default: \"id\"
+  The name of the id field
 
-  Supported mlt keys: :mlt-fl, :mlt-qf
+  :mlt.ids
+  A lest of ids and boosts e.g. [[\"12345\" 3] [\"12346\" 2]]
+
+  :mlt.top <int>
+  The number of top interesting terms to use, per field.
+
+  :q
+  \"Regular edismax query\" that is added to mlt query
+
+  Supported mlt keys:
+  :mlt.fl
+  :mlt.mintf
+  :mlt.mindf
+  :mlt.minwl
+  :mlt.boost
+  :mlt.qf
 
   IMPORTANT: All mlt.fl fields MUST be set as TermVectors=true in the managedschema
   for the mlt query to be integrated to main q.
   "
   [client-config settings]
-  (let [mlt-q (:mlt.q settings)
+  (let [tv-q (mlt-ids->tv-q (:mlt.ids settings) (or (:mlt.field settings) "id"))
         tv-resp (query-term-vectors
                  client-config
-                 {:q mlt-q
-                  :fl (:mlt.fl settings)})
-        tv-terms (term-vectors-resp->interesting-terms-per-field
-                  tv-resp
-                  (:mlt.qf settings))
-        q (tv-terms->q tv-terms (:q settings))
-        fq (string/join " " [(:fq settings) (format "-(%s)" mlt-q)])
+                 {:q tv-q
+                  :tv.fl (:mlt.fl settings)
+                  :tv.all true
+                  :rows (count (:mlt.ids settings))})
+        int-terms (term-vectors-resp->interesting-terms-per-field
+                   tv-resp
+                   settings)
+        q (interesting-terms-per-field->q int-terms settings)
+        lucene-q (format "{!lucene v='(%s)'}" q)
+        fq (string/join " " [(:fq settings) (format "-(%s)" tv-q)])
         settings (-> settings
-                     (assoc :q q)
+                     (assoc :q lucene-q)
                      (assoc :fq fq)
                      (dissoc mlt-keys)
-                     (dissoc :mlt.q))
+                     (dissoc :mlt.field :mlt.qf :mlt.ids :mlt.top))
         resp (query client-config (merge {:defType "edismax"} settings))]
-    (assoc resp :interestingTerms tv-terms :match (-> tv-resp :response))))
+    (assoc resp :interestingTerms int-terms :match (-> tv-resp :response))))
 
 (comment
+  (def client-config {:core :tmdb})
+  (let [settings {:defType "edismax"
+                   :q (str "{!cache=false} "
+                            (string/join " " (map #(str "_text_:" %)
+                                                  past-search-queries)))
+                   :now (inst-ms (:release_date bond-spectre-movie))
+                   :bf "recip(ms(NOW,release_date),3.16e-11,1,1)^50"
+                   :fl ["title" "score" "release_date"]
+                   :mlt.fl ["overview" "genres" "title" "keywords"
+                            "production_companies" "production_countries"
+                            "spoken_languages" "director"]
+                   :mlt.field "db_id"
+                   :mlt.ids (into [[(:db_id bond-spectre-movie) 1]]
+                                  (map (juxt :db_id (constantly 1))
+                                       user-last-watched-movies))
+                   :mlt.top 15
+                   :mlt.boost true
+                   :mlt.mintf 1
+                   :mlt.mindf 3
+                   :mlt.minwl 3
+                   :mlt.qf [["genres" 10] ["overview" 6] ["title" 3] ["tagline" 3] ["keywords" 1]]}]
+    (solr.query/query-mlt-tv-edismax client-config settings))
 
-  (json/read-str nil :key-fn keyword)
+  (query-term-vectors
+   client-config
+   {:q "db_id:206647"
+    :tv.fl ["score" "title"]
+    :tv.all true
+    :rows 1})
   )
