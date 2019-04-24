@@ -7,6 +7,7 @@
 * unzip and move solr-8.0.0 to put solr home folder in you $HOME directory or any place (outside your clojure project)
 * go to solr-8.0.0/server/solr and copy solr.xml.
 * paste it in your solr home dir (e.g. ~/solr-8.0.0)
+* `wget -P [your dir]/contrib/dataimporthandler/lib https://jdbc.postgresql.org/download/postgresql-42.2.5.jar`
 
 
 ### 2. set SOLR_HOME env var to point to solr home dir 
