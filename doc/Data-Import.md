@@ -1,14 +1,14 @@
 # Importing/Indexing database (PostgreSQL) in Solr using corona.data-import namespace
 
+**Important note: you don't need SQL data-importer if you use `corona.index` + your favorite clojure sql library**
+. 
 ## Data Importer Setup Instructions
 
 ### 1. Download the JDBC driver 
-Download the JDBC driver for PostgreSQL here:
-https://jdbc.postgresql.org/download.html
+* `mkdir $SOLR_HOME/contrib/dataimporthandler/lib`
+* `wget -P $SOLR_HOME/contrib/dataimporthandler/lib https://jdbc.postgresql.org/download/postgresql-42.2.5.jar`
 
-Copy file `postgresql-*.jar` from the downloaded archive and it in `$SOLR_HOME/contrib/dataimporthandler/lib`
-
-Create `lib` folder if needed.
+See https://jdbc.postgresql.org/download.html for more information. 
 
 ### 2. Start from dih db collection example
 
