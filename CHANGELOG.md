@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.5-SNAPSHOT] - 2019-04-23
+### Changed
+- `query-mlt-tv-edismax` now doesn't append interesting terms in `:q` but rather make them accessible via special var mltq you can call like this `${mltq}`. This allows more control on how to add the special query.
+
 ## [0.1.4-SNAPSHOT] - 2019-04-23
 ### Changed
 - `query-mlt-tv-edismax` now uses lucene query parser for interesting terms and can accept more then one id-boost pair e.g. `{:mlt.field "id" :mlt.ids [["12345" 3] ["12346" "2"]]}`
