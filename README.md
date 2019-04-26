@@ -5,7 +5,11 @@ Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
 
 [![Clojars Project](https://img.shields.io/clojars/v/corona.svg)](https://clojars.org/corona)
 
-## Why?
+
+## Introduction
+
+See Corona release slides from Clojure North talk: 
+https://docs.google.com/presentation/d/1aRkmt_uRF7CDDlX5sYavf8s_uYVkYqIHZ-Sy3d5a3v4
 
 ### Why use Solr?
 
@@ -16,17 +20,22 @@ Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
 
 * You want to use Solr 8 from the joy of Clojure
 
-## Companies
+### Companies
 
-### Who is using Solr?
+#### Who is using Solr?
 
 * Netflix
 * Instagram 
 * DuckDuckGO 
 * Bloomberg
+* Reddit
+* Apple 
+* Dell
+* Walmart
+* Salesforce
 * and many more...
 
-### Who is using corona?
+#### Who is using corona?
 
 * Stylitics
 
@@ -35,6 +44,7 @@ Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
 
 * doc/Installation.md
 * doc/Data-Import.md
+* doc/Schema.md
 
 ## Development 
 
