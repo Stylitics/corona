@@ -360,11 +360,17 @@
   :mlt.ids
   A lest of ids and boosts e.g. [[\"12345\" 3] [\"12346\" 2]]
 
-  :mlt.top <int>
+  :mlt.top <int> 
   The number of top interesting terms to use, per field.
 
   :q
   \"Regular edismax query\" that is added to mlt query
+
+  Special vars:
+
+  ${mltq}
+  This is the computed interesting-term query you can pass in.
+  e.g. {!boost b=recip(ms(NOW,date),3.16e-11,1,1)^100 v=\"{!lucene v='(${mltq})'}\"}
 
   Supported mlt keys:
   :mlt.fl
@@ -388,11 +394,10 @@
         int-terms (term-vectors-resp->interesting-terms-per-field
                    tv-resp
                    settings)
-        q (interesting-terms-per-field->q int-terms settings)
-        lucene-q (format "{!lucene v='(%s)'}" q)
+        mltq (interesting-terms-per-field->q int-terms settings)
         fq (string/join " " [(:fq settings) (format "-(%s)" tv-q)])
         settings (-> settings
-                     (assoc :q lucene-q)
+                     (assoc :mltq mltq)
                      (assoc :fq fq)
                      (dissoc mlt-keys)
                      (dissoc :mlt.field :mlt.qf :mlt.ids :mlt.top))
