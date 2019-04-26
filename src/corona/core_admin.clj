@@ -11,6 +11,29 @@
 ;; SOURCE: https://lucene.apache.org/solr/guide/7_7/coreadmin-api.html
 
 
+(defn update!
+  "CoreAdmin actions can be executed by specifying an action request
+  parameter, with additional action specific arguments provided as
+  additional parameters.
+
+  Settings
+
+  :action <\"STATUS\", \"CREATE\", \"RELOAD\", \"RENAME\", \"SWAP\", \"UNLOAD\",
+           \"MERGEINDEXES\", \"SPLIT\", \"REQUESTSTATUS\", \"REQUESTRECOVERY\">
+
+  :<additional settings for action>
+  "
+  [client-config & [{:keys [core] :as settings}]]
+  (let [core-name (name (or core (:core client-config)))
+        query-params (merge settings {:core core-name})
+        options {:query-params query-params
+                 :timeout 10000
+                 :as :auto}
+        url (utils/create-admin-url client-config "/cores")
+        {:keys [body]} @(http/get url options)]
+    (when body (json/read-str body :key-fn keyword))))
+
+
 (defn create!
   "The CREATE action creates a new core and registers it.
 
@@ -72,14 +95,10 @@
   collection.
   "
   [client-config & [{:keys [core] :as settings}]]
-  (let [core-name (name (or core (:core client-config)))
-        query-params (merge settings {:action "CREATE" :name core-name})
-        options {:query-params query-params
-                 :timeout 10000
-                 :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
+  (let [core-name (name (or core (:core client-config)))]
+    (update! client-config (-> {:name core-name}
+                               (merge settings)
+                               (assoc :action "CREATE")))))
 
 
 (defn delete!
@@ -100,15 +119,25 @@
   Request ID to track this action which will be processed asynchronously.
   "
   [client-config & [{:keys [core] :as settings}]]
-  (let [core-name (name (or core (:core client-config)))
-        query-params (merge settings {:action "UNLOAD" :core core-name})
-        options {:query-params query-params
-                 :timeout 10000
-                 :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
+  (update! client-config (assoc settings :action "UNLOAD")))
 
+
+(defn reload!
+  "The RELOAD action loads a new core from the configuration of an existing,
+  registered Solr core.
+  While the new core is initializing, the existing one will continue to handle
+  requests. When the new Solr core is ready, it takes over and the old core is
+  unloaded. This is useful when you’ve made changes to a Solr core’s
+  configuration on disk, such as adding new field definitions.
+  Calling the RELOAD action lets you apply the new configuration without having
+  to restart the Web container.
+
+  Settings:
+  :core <string or keyword>
+  The name of a core to be removed. This parameter is required.
+  "
+  [client-config & [{:keys [core] :as settings}]]
+  (update! client-config (assoc settings :action "RELOAD")))
 
 (defn status
   "The STATUS action returns the status of all running Solr cores, or status for only the named core.
@@ -126,13 +155,7 @@
   of time and isn’t always required. The default is true.
   "
   [client-config & [{:keys [core] :as settings}]]
-  (let [core-name (name (or core (:core client-config)))
-        query-params (merge settings {:action "STATUS" :core core-name})
-        options {:query-params query-params
-                 :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
+  (update! client-config (assoc settings :action "STATUS")))
 
 
 (defn status-details
