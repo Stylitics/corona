@@ -1,7 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [0.1.5-SNAPSHOT] - 2019-04-23
+## [0.1.6-SNAPSHOT] - 2019-04-26
+### Added
+- `corona.core-admin/update!` general reusable handler,
+- `corona.core-admin/reload!` handler
+
+## [0.1.5-SNAPSHOT] - 2019-04-26
 ### Changed
 - `query-mlt-tv-edismax` now doesn't append interesting terms in `:q` but rather make them accessible via special var mltq you can call like this `${mltq}`. This allows more control on how to add the special query.
 
