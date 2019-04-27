@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.7-SNAPSHOT] - 2019-04-27
+### Added
+- `corona.core-admin/rename!` 
+- `corona.core-admin/swap!`
+- `corona.core-admin/merge-indexes!`
+- `corona.core-admin/split!`
+- `corona.core-admin/request-status`
+- `corona.core-admin/request-recovery`
+### Changed
+`corona.core-admin/delete!` is renamed `corona.core-admin/unload!` to match solr core-admin API
+
 ## [0.1.6-SNAPSHOT] - 2019-04-26
 ### Added
 - `corona.core-admin/update!` general reusable handler,
