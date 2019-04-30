@@ -144,7 +144,7 @@
   [terms-map]
   (->>  terms-map
         (mapcat (fn [[field terms]]
-                  (map (fn [[term score]] (str field ":" term "^" (or score 1)))
+                  (map (fn [[term score]] (str field ":\"" term "\"^" (or score 1)))
                        terms)))
         (string/join " ")))
 
