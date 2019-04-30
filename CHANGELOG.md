@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.8-SNAPSHOT] - 2019-04-30
+### Fixed
+- `corona.query/terms-per-field->q` had to wrap term with quotes in case term has more than one word.
 ## [0.1.7-SNAPSHOT] - 2019-04-27
 ### Added
 - `corona.core-admin/rename!` 
