@@ -25,15 +25,15 @@
 
   Usage:
 
-  (update-commands! client-config {:delete {:id \"id1\"}})
+  (update! client-config {:delete {:id \"id1\"}})
 
-  (update-commands! client-config {:add {:commitWithin 5000,
+  (update! client-config {:add {:commitWithin 5000,
                                 :overwrite false
                                 :doc {:f1 \"v1\"
                                       :f2 \"v2\"}}})
 
 
-  (update-commands! client-config [{:add {:commitWithin 5000
+  (update! client-config [{:add {:commitWithin 5000
                                           :overwrite false
                                           :doc {:f1 \"v1 \"
                                                 :f2 \"v2 \"}}}
