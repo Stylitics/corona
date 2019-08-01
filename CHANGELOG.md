@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.9-SNAPSHOT] - 2019-08-01
+
+### Changed
+- `corona.core-admin/update!` can handle list of JSON commands correctly and accepts optional settings as 3d argument, exactly like `corona.core-admin/add!` and `corona.core-admin/delete!`
+- `corona.core-admin/add!` sends single doc to the `/update/json/docs` Solr endpoint as specified in the Solr documentation.
+
 ## [0.1.8-SNAPSHOT] - 2019-04-30
 ### Fixed
 - `corona.query/terms-per-field->q` had to wrap term with quotes in case term has more than one word.
