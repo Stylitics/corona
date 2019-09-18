@@ -52,7 +52,7 @@ PR welcome!
 
 ### ROADMAP:
 
-- Better custom MLT handler
+- Better error handling (e.g. when solr is not started and we try to index or run a query)
 - Cover all Schema API 
 
 
