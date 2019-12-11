@@ -1,4 +1,4 @@
-(defproject corona "0.1.3-SNAPSHOT"
+(defproject corona "0.1.9-SNAPSHOT"
   :description "A clojure wrapper Solr client"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.9.0"]
@@ -11,5 +11,4 @@
                  [ring/ring-codec "1.1.1"]]
   :source-paths ["src"]
   :profiles {:uberjar {:aot :all}}
-  :main corona.core-admin
-)
+  :main corona.core-admin)

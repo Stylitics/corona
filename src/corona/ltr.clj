@@ -3,7 +3,8 @@
    [clojure.data.json :as json]
    [clojure.string :as string]
    [corona.utils :as utils]
-   [org.httpkit.client :as http]))
+   [org.httpkit.client :as http])
+  (:import (java.net URLEncoder)))
 
 ;;; FIXME: WIP - Vastly incomplete and sometimes too specific. Please submit PR.
 
@@ -90,6 +91,8 @@
     (-> @(http/put url options) :body utils/json-read-str)))
 
  ;;; Feature extraction
+(defn url-encode [string-to-encode]
+  (-> string-to-encode (URLEncoder/encode "UTF-8") (.replace "+" "%20")))
 
 (defn extract-features
   "Extracts features from feature store and returns vector of maps with keys:
@@ -100,9 +103,9 @@
         url (str sorl-core-url
                  "/query?q=" (or q "*:*")
                  "&rows=" (or rows "10000")
-                 "&sort=" (or sort "id asc")
+                 "&sort=" (url-encode (or sort "id asc"))
                  "&fl=" (or fl "id")
-                 ",[features store=" store "]")
+                 ",[features%20store=" store "]")
         {:keys [body]} @(http/get url {:accept :json})
         docs (-> body
                  (utils/json-read-str (fn [k] (if (= k "[features]")
@@ -160,8 +163,8 @@
 ;;; Update model store
 
 (defn make-model-store-base-url
-  [client-config]
-  (utils/create-client-url client-config "/schema/model-store"))
+  [client-config & [model-name]]
+  (utils/create-client-url client-config (str "/schema/model-store" (when model-name (str "/" model-name)))))
 
 (defn delete-model!
   "Deletes EXISTING ltr model with name 'model-name' from solr
@@ -169,8 +172,7 @@
   WARN: solr can hang on attempt on deleting nonexistent model.
   Returns json-decoded body of response."
   [client-config model-name]
-  (let [uri (str "/" model-name)
-        url (make-model-store-base-url client-config uri)]
+  (let [url (make-model-store-base-url client-config model-name)]
     (-> @(http/delete url {:as :auto}) :body utils/json-read-str)))
 
 (defn upload-model!

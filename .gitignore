@@ -16,3 +16,4 @@ pom.xml.asc
 .hg/
 *env_vars
 **/.DS_Store
+tag_release.sh

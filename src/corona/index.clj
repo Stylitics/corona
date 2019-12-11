@@ -16,8 +16,9 @@
 ;; following API.
 ;; Source: https://lucene.apache.org/solr/guide/7_6/uploading-data-with-index-handlers.html#json-formatted-index-updates
 
+
 (defn update!
-  "Sends JSON Update Commands.
+  "Sends JSON Update Command(s).
   In general, the JSON update syntax supports all of the update commands that
   the XML update handler supports, through a straightforward mapping. Multiple
   commands, adding and deleting documents, may be contained in one message.
@@ -31,12 +32,27 @@
                                 :doc {:f1 \"v1\"
                                       :f2 \"v2\"}}})
 
-  Source: https://lucene.apache.org/solr/guide/6_6/uploading-data-with-index-handlers.html#UploadingDatawithIndexHandlers-SendingJSONUpdateCommands
+
+  (update! client-config [{:add {:commitWithin 5000
+                                          :overwrite false
+                                          :doc {:f1 \"v1 \"
+                                                :f2 \"v2 \"}}}
+                                   {:delete {:id \"id1 \"}}])
+
+
+  Source: https://lucene.apache.org/solr/guide/8_1/uploading-data-with-index-handlers.html#UploadingDatawithIndexHandlers-SendingJSONUpdateCommands
   "
-  [client-config settings]
+  [client-config commands & [settings]]
   (let [url (utils/create-client-url client-config "/update")
+        trim (fn [str] (.substring (java.lang.String. str) 1 (- (count str) 1)))
+        request-body (if (not (map? commands))
+                       (let [parts (map #(trim (json/write-str %)) commands)
+                             joined-parts (clojure.string/join "," parts)]
+                         (str \{ joined-parts \}))
+                       (json/write-str commands))
         options {:throw-exceptions false
-                 :body             (json/write-str settings)
+                 :query-params     settings
+                 :body             request-body
                  :headers          {"Content-Type" "application/json"}
                  :as               :auto}]
     (-> @(http/post url options) :body utils/json-read-str)))
@@ -83,10 +99,12 @@
   previous versions of the same document (see below).
   "
   [client-config doc-or-docs & [settings]]
-  (let [docs (if (sequential? doc-or-docs) doc-or-docs [doc-or-docs])
-        url (utils/create-client-url client-config "/update")
+  (let [url-suffix (if (map? doc-or-docs)
+                     "/update/json/docs"
+                     "/update")
+        url (utils/create-client-url client-config url-suffix)
         options {:query-params settings
-                 :body         (json/write-str docs)
+                 :body         (json/write-str doc-or-docs)
                  :headers      {"Content-Type" "application/json"}
                  :as           :auto}]
     (-> @(http/post url options) :body utils/json-read-str)))

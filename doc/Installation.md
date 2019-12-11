@@ -8,6 +8,8 @@
 * go to solr-8.0.0/server/solr and copy solr.xml.
 * paste it in your solr home dir (e.g. ~/solr-8.0.0)
 
+Note: If you also want to index your sql database to solr, you can either rely on `corona.index` ns and use your favorite clojure sql library to fetch data to index (recommended), or use the Solr Data Importer plugin in which case you'll need extra installation steps: https://github.com/Stylitics/corona/blob/master/doc/Data-Import.md
+
 
 ### 2. set SOLR_HOME env var to point to solr home dir 
 
@@ -23,22 +25,14 @@ export SOLR_HOME="$HOME/solr-8.0.0" # put right version here
 export SOLR_ULIMIT_CHECKS=false
 ```
 
-Notes:
-* emacs users: You may need to add `setenv SOLR_HOME /my/path/to/solr/home` to your /etc/launchd.conf file and/or install [exec-path-from-shell](https://github.com/purcell/exec-path-from-shell** package allowing you to read env variables from emacs GUI. 
-** [Download](https://github.com/purcell/exec-path-from-shell/tags** the latest release
-** install `exec-path-from-shell.el` with `M-x package-install-file`
-** insert the following in `~/.emacs.d/init.el`
-```
-...
-;; BEGIN exec-path-from-shell
-(use-package exec-path-from-shell
- :ensure t
- :if (memq window-system '(mac ns x))
- :config (setq exec-path-from-shell-variables '("PATH" "SOLR_HOME"))
- (exec-path-from-shell-initialize))
-;; END exec-path-from-shell
-(require 'server)
-(unless (server-running-p) (server-start)))
+For Emacs users:
+* MAC users: you may need to add `setenv SOLR_HOME /my/path/to/solr/home` to your /etc/launchd.conf file
+* or install [exec-path-from-shell](https://github.com/purcell/exec-path-from-shell package allowing you to read env variables from emacs GUI
+* or simply put these in your `init.el`:
+
+```elisp
+(setenv "SOLR_HOME" "/my/path/to/solr/home")
+(setenv "SOLR_ULIMIT_CHECKS" "false")
 ```
  
 ### 3. Add corona library in project.clj

@@ -1,6 +1,44 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.9-SNAPSHOT] - 2019-08-01
+
+### Changed
+- `corona.core-admin/update!` can handle list of JSON commands correctly and accepts optional settings as 3d argument, exactly like `corona.core-admin/add!` and `corona.core-admin/delete!`
+- `corona.core-admin/add!` sends single doc to the `/update/json/docs` Solr endpoint as specified in the Solr documentation.
+
+## [0.1.8-SNAPSHOT] - 2019-04-30
+### Fixed
+- `corona.query/terms-per-field->q` had to wrap term with quotes in case term has more than one word.
+## [0.1.7-SNAPSHOT] - 2019-04-27
+### Added
+- `corona.core-admin/rename!` 
+- `corona.core-admin/swap!`
+- `corona.core-admin/merge-indexes!`
+- `corona.core-admin/split!`
+- `corona.core-admin/request-status`
+- `corona.core-admin/request-recovery`
+### Changed
+`corona.core-admin/delete!` is renamed `corona.core-admin/unload!` to match solr core-admin API
+
+## [0.1.6-SNAPSHOT] - 2019-04-26
+### Added
+- `corona.core-admin/update!` general reusable handler,
+- `corona.core-admin/reload!` handler
+
+## [0.1.5-SNAPSHOT] - 2019-04-26
+### Changed
+- `query-mlt-tv-edismax` now doesn't append interesting terms in `:q` but rather make them accessible via special var mltq you can call like this `${mltq}`. This allows more control on how to add the special query.
+
+## [0.1.4-SNAPSHOT] - 2019-04-23
+### Changed
+- `query-mlt-tv-edismax` now uses lucene query parser for interesting terms and can accept more then one id-boost pair e.g. `{:mlt.field "id" :mlt.ids [["12345" 3] ["12346" "2"]]}`
+
+## [0.1.3] - 2019-04-20
+### Changed
+- emacs install doc fix
+- url-encode for feature extraction request
+
 ## [0.1.2] - 2019-04-18
 ### Changed
 - mlt-tv-edismax: remove mlt.q (id) via filter query instead of regular query, to make sure it is removed (no disjunction)
