@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - `corona.query/terms-per-field->q` had to wrap term with quotes in case term has more than one word.
 ## [0.1.7-SNAPSHOT] - 2019-04-27
 ### Added
-- `corona.core-admin/rename!` 
+- `corona.core-admin/rename!`
 - `corona.core-admin/swap!`
 - `corona.core-admin/merge-indexes!`
 - `corona.core-admin/split!`
