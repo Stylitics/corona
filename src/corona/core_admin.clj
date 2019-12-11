@@ -76,10 +76,8 @@
         options {:query-params query-params
                  :timeout 10000
                  :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
-
+        url (utils/create-admin-url client-config "/cores")]
+    (some-> @(http/get url options) :body utils/json-read-str)))
 
 (defn delete!
   ":core <string or keyword>
@@ -104,10 +102,8 @@
         options {:query-params query-params
                  :timeout 10000
                  :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
-
+        url (utils/create-admin-url client-config "/cores")]
+    (some-> @(http/get url options) :body utils/json-read-str)))
 
 (defn status
   "The STATUS action returns the status of all running Solr cores, or status for only the named core.
@@ -129,10 +125,8 @@
         query-params (merge settings {:action "STATUS" :core core-name})
         options {:query-params query-params
                  :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
-
+        url (utils/create-admin-url client-config "/cores")]
+    (some-> @(http/get url options) :body utils/json-read-str)))
 
 (defn status-details
   "Gets core status and returns only core details map.
@@ -143,5 +137,3 @@
         :status
         core
         not-empty)))
-
-

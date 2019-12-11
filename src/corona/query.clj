@@ -6,7 +6,6 @@
    [org.httpkit.client :as http]
    [ring.util.codec :as codec]))
 
-
 ;;; Params
 
 (defn format-param
@@ -168,9 +167,8 @@
         query-params (format-params settings)
         options {:query-params query-params
                  :as :auto}
-        url (utils/create-client-url client-config handler-uri)
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+        url (utils/create-client-url client-config handler-uri)]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn query-term-vectors
   [client-config settings]
