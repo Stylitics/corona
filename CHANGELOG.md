@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.10-SNAPSHOT] - 2019-12-12
+
+### Added
+- Added dynamic var `corona.utils/*json-read-throw-on-error*` where if set to true, `corona.utils/json-read-str` used to parse solr responses will throw exception, instead of returning nil when parsing JSON fails.
+
 ## [0.1.9-SNAPSHOT] - 2019-08-01
 
 ### Changed
