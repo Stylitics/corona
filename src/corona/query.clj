@@ -5,7 +5,6 @@
    [corona.utils :as utils]
    [org.httpkit.client :as http]))
 
-
 ;;; Params
 
 (defn format-param
@@ -57,7 +56,6 @@
                :mlt.match.offset
                :mlt.interestingTerms])
 
-
 ;;; Terms
 
 (defn mlt-ids->tv-q
@@ -85,7 +83,6 @@
     (< df mindf) false
     (< (count term) mindf) false
     :else true))
-
 
 (defn term-vectors-resp->interesting-terms-per-field
   "Digests the response from tvrh handler and creates a interestingTerms map
@@ -180,9 +177,8 @@
         query-params (format-params settings)
         options {:query-params query-params
                  :as :auto}
-        url (utils/create-client-url client-config handler-uri)
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+        url (utils/create-client-url client-config handler-uri)]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn query-term-vectors
   "Settings

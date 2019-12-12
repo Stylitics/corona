@@ -74,9 +74,8 @@
    Returns json-decoded body of response."
   [client-config & [store-name]]
   (let [uri (or store-name "_DEFAULT_")
-        url (make-feature-store-url client-config uri)
-        {:keys [body]} @(http/delete url {:as :auto})]
-    (json/read-str body :key-fn keyword)))
+        url (make-feature-store-url client-config uri)]
+    (-> @(http/delete url {:as :auto}) :body utils/json-read-str)))
 
 (defn upload-features!
   "Uploads vector of feature descriptions 'features' to solr.
@@ -88,10 +87,8 @@
   (let [url (make-feature-store-url client-config)
         options {:body    (json/write-str features)
                  :headers {"Content-Type" "application/json"}
-                 :as      :auto}
-        {:keys [body]} @(http/put url options)]
-    (json/read-str body :key-fn keyword)))
-
+                 :as      :auto}]
+    (-> @(http/put url options) :body utils/json-read-str)))
 
  ;;; Feature extraction
 (defn url-encode [string-to-encode]
@@ -111,19 +108,19 @@
                  ",[features%20store=" store "]")
         {:keys [body]} @(http/get url {:accept :json})
         docs (-> body
-                 (json/read-str :key-fn (fn [k] (if (= k "[features]")
-                                                  :features
-                                                  (keyword k))))
+                 (utils/json-read-str (fn [k] (if (= k "[features]")
+                                                :features
+                                                (keyword k))))
                  :response
                  :docs)]
 
-    (->> docs
-         (mapv #(update % :features
-                        (fn [features]
-                          (->> (string/split features #",")
-                               (map (fn [feat] (string/split feat #"=")))
-                               (map second)
-                               (mapv (fn [f] (Float/parseFloat f))))))))))
+    (some->> docs
+             (mapv #(update % :features
+                            (fn [features]
+                              (->> (string/split features #",")
+                                   (map (fn [feat] (string/split feat #"=")))
+                                   (map second)
+                                   (mapv (fn [f] (Float/parseFloat f))))))))))
 
 
 ;;; Model
@@ -175,9 +172,8 @@
   WARN: solr can hang on attempt on deleting nonexistent model.
   Returns json-decoded body of response."
   [client-config model-name]
-  (let [url (make-model-store-base-url client-config model-name)
-        {:keys [body]} @(http/delete url {:as :auto})]
-    (json/read-str body :key-fn keyword)))
+  (let [url (make-model-store-base-url client-config model-name)]
+    (-> @(http/delete url {:as :auto}) :body utils/json-read-str)))
 
 (defn upload-model!
   "Uploads 'model' as ltr model to solr, json-encoding it previously,
@@ -188,6 +184,5 @@
   (let [url (make-model-store-base-url client-config)
         options {:body    (json/write-str model)
                  :headers {"Content-Type" "application/json"}
-                 :as      :auto}
-        {:keys [body]} @(http/put url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as      :auto}]
+    (-> @(http/put url options) :body utils/json-read-str)))

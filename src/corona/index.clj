@@ -54,9 +54,8 @@
                  :query-params     settings
                  :body             request-body
                  :headers          {"Content-Type" "application/json"}
-                 :as               :auto}
-        {:keys [body]} @(http/post url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as               :auto}]
+    (-> @(http/post url options) :body utils/json-read-str)))
 
 (defn add!
   "Uploads 'doc-or-docs' (map or vector of maps) to solr using opened 'client'.
@@ -107,10 +106,8 @@
         options {:query-params settings
                  :body         (json/write-str doc-or-docs)
                  :headers      {"Content-Type" "application/json"}
-                 :as           :auto}
-        {:keys [body]} @(http/post url options)]
-    (json/read-str body :key-fn keyword)))
-
+                 :as           :auto}]
+    (-> @(http/post url options) :body utils/json-read-str)))
 
 (defn delete!
   "Usage:
@@ -124,9 +121,8 @@
         options {:query-params settings
                  :body         (json/write-str body)
                  :headers      {"Content-Type" "application/json"}
-                 :as           :auto}
-        {:keys [body]} @(http/post url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as           :auto}]
+    (-> @(http/post url options) :body utils/json-read-str)))
 
 (defn commit!
   "The :commit operation writes all documents loaded since the last commit to

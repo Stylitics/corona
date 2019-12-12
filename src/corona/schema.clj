@@ -33,13 +33,10 @@
   [client-config & [trailing-uri]]
   (utils/create-client-url client-config (str "/schema" trailing-uri)))
 
-
 (defn get-fields
   [client-config]
-  (let [url (make-schema-url client-config "/fields")
-        {:keys [body]} @(http/get url {:as :auto})]
-    (json/read-str body :key-fn keyword)))
-
+  (let [url (make-schema-url client-config "/fields")]
+    (-> @(http/get url {:as :auto}) :body utils/json-read-str)))
 
 (defn update-field!
   "Updates fields in schema. Update body has at least one keyword that represents the method and the param as value.
@@ -75,10 +72,8 @@
   (let [url (make-schema-url client-config)
         options {:body         (json/write-str body)
                  :headers      {"Content-Type" "application/json"}
-                 :as           :auto}
-        {:keys [body]} @(http/post url options)]
-    (json/read-str body :key-fn keyword)))
-
+                 :as           :auto}]
+    (-> @(http/post url options) :body utils/json-read-str)))
 
 ;;; Update methods sugar
 
@@ -169,6 +164,5 @@
 
 (defn get-field-types
   [client-config]
-  (let [url (make-schema-url client-config "/fieldtypes")
-        {:keys [body]} @(http/get url {:as :auto})]
-    (json/read-str body :key-fn keyword)))
+  (let [url (make-schema-url client-config "/fieldtypes")]
+    (-> @(http/get url {:as :auto}) :body utils/json-read-str)))

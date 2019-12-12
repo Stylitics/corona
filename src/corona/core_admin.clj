@@ -29,10 +29,8 @@
         options {:query-params query-params
                  :timeout 10000
                  :as :auto}
-        url (utils/create-admin-url client-config "/cores")
-        {:keys [body]} @(http/get url options)]
-    (when body (json/read-str body :key-fn keyword))))
-
+        url (utils/create-admin-url client-config "/cores")]
+    (some-> @(http/get url options) :body utils/json-read-str)))
 
 (defn status
   "The STATUS action returns the status of all running Solr cores, or status for only the named core.
@@ -57,7 +55,6 @@
   [client-config & [{:keys [core] :as settings}]]
   (update! client-config (assoc settings :action "STATUS")))
 
-
 (defn status-details
   "Custom Corona Helper.
   It gets core status and returns only core details map.
@@ -68,7 +65,6 @@
         :status
         core
         not-empty)))
-
 
 (defn create!
   "The CREATE action creates a new core and registers it.
@@ -257,7 +253,6 @@
   [client-config & [{:keys [core] :as settings}]]
   (update! client-config (assoc settings :action "UNLOAD")))
 
-
 (defn merge-indexes!
   "The MERGEINDEXES action merges one or more indexes to another index.
   The indexes must have completed commits, and should be locked against writes
@@ -308,7 +303,6 @@
   "
   [client-config & [{:keys [core] :as settings}]]
   (update! client-config (assoc settings :action "MERGEINDEXES")))
-
 
 (defn split!
   "The SPLIT action splits an index into two or more indexes. The index being
@@ -390,7 +384,6 @@
   "
   [client-config & [{:keys [core] :as settings}]]
   (update! client-config (assoc settings :action "SPLIT")))
-
 
 (defn request-status
   "Request the status of an already submitted asynchronous CoreAdmin API call.

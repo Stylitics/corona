@@ -23,9 +23,8 @@
   [client-config {:keys [clean commit debug entity optimize] :as settings}]
   (let [url (make-data-import-base-url client-config)
         options {:query-params (merge settings {:command "full-import"})
-                 :as :auto}
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as :auto}]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn delta-import!
   "This will the changes and index only the changes happened from the last full-import.
@@ -38,27 +37,24 @@
   [client-config {:keys [clean commit debug entity optimize] :as settings}]
   (let [url (make-data-import-base-url client-config)
         options {:query-params (merge settings {:command "delta-import"})
-                 :as :auto}
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as :auto}]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn abort!
   "Aborts the running process. Useful to stop indexing process."
   [client-config]
   (let [url (make-data-import-base-url client-config)
         options {:query-params {:command "abort"}
-                 :as :auto}
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as :auto}]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn reload-config!
   "Reloads the configuration, catching changes to it without the need to restart Solr."
   [client-config]
   (let [url (make-data-import-base-url client-config)
         options {:query-params {:command "reload-config"}
-                 :as :auto}
-        {:keys [body]} @(http/get url options)]
-    (json/read-str body :key-fn keyword)))
+                 :as :auto}]
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn status
   "Returns the statistics on number of documents indexed, no of documents deleted etc."
