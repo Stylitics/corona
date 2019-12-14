@@ -1,5 +1,6 @@
 (ns corona.core-admin
   (:gen-class)
+  (:refer-clojure :exclude [swap!])
   (:require
    [clojure.data.json :as json]
    [corona.utils :as utils]
