@@ -34,7 +34,7 @@ throw exception on any error."
   ([s key-fn]
      (try
        (json/read-str s :key-fn key-fn)
-       (catch Exception e
+       (catch Exception _
          (when *json-read-throw-on-error*
-           (throw e)))))
+           (throw (ex-info "JSON read error" {:string s}))))))
   ([str] (json-read-str str keyword)))
