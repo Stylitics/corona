@@ -173,18 +173,50 @@
 
 (defn query-handler
   [client-config handler settings]
+  ;;(prn "client-config" client-config)
+  ;;(prn  "handler=" handler)
+  ;;(prn "settings=" settings)
   (let [handler-uri (str "/" (name handler))
-        query-params (format-params settings)
-        options {:query-params query-params
-                 :as :auto}
+        ;;query-params (format-params settings)
+        ;; options {:query-params query-params
+        ;;          :as :auto}
         url (utils/create-client-url client-config handler-uri)]
+    ;;(prn url)
+    (if (= (:method settings) :get)
+      (let [options {:query-params (format-params settings)
+                     :as :auto}]
+        (-> @(http/get url options) :body utils/json-read-str))
+      (let [options {;;:query-params (format-params settings)
+                     :params (format-params settings)
+                     :as :auto
+                     :headers {"Content-Type" "application/json; charset=utf-8"}}
+            response @(http/post url options)
+            _ (prn "foo1=" response)
+            response (-> response :body utils/json-read-str)
+            _ (prn "foo2=" response)]
+        
+        response
+        #_(->  :body utils/json-read-str)
+        #_(-> @(http/post url options) )
+        ))))
 
-    (if (= (:method settings) :post)
-      (let [options-with-headers (assoc options
-                                        :headers {"Content-Type" "application/json; charset=utf-8"})]
-        (-> @(http/post url options-with-headers) :body utils/json-read-str))
-      (-> @(http/get url options) :body utils/json-read-str))))
+(comment
+  (def client-config {:type :http, :host "127.0.0.1", :port 8983, :core :catalog-outfits})
+  (def handler :select)
+  (def settings {:q "id:275051"})
+  (query-handler client-config handler settings)
+  
+  
+  (-> @(http/post "http://127.0.0.1:8983/solr/catalog-outfits/select" {:body "{\"params\":{\"q\":\"id:275051\",\"rows\":10}}"
+                                                                       :headers {"Content-Type" "application/json; charset=utf-8"}
+                                                                       })
+      :body utils/json-read-str)
 
+  (query-handler client-config handler {:q "+id:1036202"
+                                        :method :post
+                                        :rows 15 :start 0 :fl [:id :updated_at :deleted_at :collage]})
+
+  client-config)
 
 (defn query-term-vectors
   "Settings
