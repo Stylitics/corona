@@ -173,12 +173,48 @@
 
 (defn query-handler
   [client-config handler settings]
+  (prn "client-config=" client-config)
+  (prn "settings=" settings)
+  (prn "handler=" handler)
   (let [handler-uri (str "/" (name handler))
         query-params (format-params settings)
         options {:query-params query-params
                  :as :auto}
         url (utils/create-client-url client-config handler-uri)]
-    (-> @(http/get url options) :body utils/json-read-str)))
+    (prn "query handler url=" url " options=" options)
+    (if (= (:method setting) :post)
+      (-> @(http/post url options) :body utils/json-read-str)
+      (-> @(http/get url options) :body utils/json-read-str)
+      )))
+
+(comment
+  (def client-config {:type :http, :host "127.0.0.1", :port 8983, :core :catalog-items})
+  (def handler :select)
+  (def settings {:q "id:1162409" :rows 15 :start 0 :fl [:id :name :outfit_ids] :wt :json})
+  (-> @(http/post "http://127.0.0.1:8983/solr/catalog-outfits/select" {:params setting})
+      :body utils/json-read-str)
+
+  (-> @(http/get "http://127.0.0.1:8983/solr/catalog-items/select" {:query-params (format-params settings)
+                                                                    :as :auto})
+      :body utils/json-read-str)
+
+  (-> @(http/post "http://127.0.0.1:8983/solr/catalog-items/select" {:query-params (format-params settings)
+                                                                     :headers {"Content-Type" "application/json; charset=utf-8"}
+                                                                     :as :auto})
+      :body utils/json-read-str)
+  
+
+  (http/post "http://127.0.0.1:8983/solr/catalog-items/select"
+             {:query-params (format-params settings)
+              :headers {"Content-Type" "application/json; charset=utf-8"}}
+             (fn [{:keys [status headers body error]}]
+               (if error
+                 (prn "failed " error)
+                 (prn "body " body))
+               ))
+  
+  (query-handler client-config handler settings)
+  )
 
 (defn query-term-vectors
   "Settings
