@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.11-SNAPSHOT] - 2020-08-27
+
+### Changed
+- Throw more informative error on JSON parse failure. Thanks @AdamFrey
+- Added ability to query using `POST` method (with `POST` there is no query length limitation unlike `GET`). Corona uses `POST` by default (to use `GET` attach `{:method :get}` to the settings). Thanks @sonwh98
+
 ## [0.1.10-SNAPSHOT] - 2019-12-12
 
 ### Added

@@ -1,4 +1,4 @@
-(defproject corona "0.1.10-SNAPSHOT"
+(defproject corona "0.1.11-SNAPSHOT"
   :description "A clojure wrapper Solr client"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.9.0"]
