@@ -6,7 +6,7 @@
                  [org.clojure/data.json "0.2.6"]
                  [commons-io/commons-io "2.6"]
                  [funcool/cuerdas "2.0.5"]
-                 [http-kit "2.3.0"]
+                 [http-kit "2.4.0"]
                  [me.raynes/fs "1.4.6"]
                  [ring/ring-codec "1.1.1"]]
   :source-paths ["src"]
