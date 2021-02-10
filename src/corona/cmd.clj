@@ -3,7 +3,7 @@
    [clojure.java.shell :refer [sh]]
    [me.raynes.fs :as fs]))
 
-(def ^:dynamic *solr-home* (System/getenv "SOLR_HOME"))
+(def ^:dynamic *solr-home* (fs/expand-home (System/getenv "SOLR_HOME")))
 
 ;;FIXME: add windows variant: bin/solr.cmd
 (def bin-solr (str *solr-home* "/bin/solr"))
