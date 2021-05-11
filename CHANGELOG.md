@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.12-SNAPSHOT] - 2021-05-11
+
+### Changed
+- Replaced `clojure.data.json` with [jsonista](https://github.com/metosin/jsonista) making `edn->json` about 8 times faster! Thanks @visibletrap
+- Changed `http-kit` version to `2.4.0`. Thanks @sonwh98
+
 ## [0.1.11-SNAPSHOT] - 2020-08-27
 
 ### Changed
