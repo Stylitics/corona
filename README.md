@@ -1,15 +1,17 @@
 # corona
 Clojure Solr 8 wrapper with additionnal helpers around MLT and LTR
 
-(pre-alpha stage, expect API to break)
-
 [![Clojars Project](https://img.shields.io/clojars/vpre/corona.svg)](https://clojars.org/corona)
 
 
 ## Introduction
 
+Demo:
+https://github.com/Stylitics/corona-demo
+
 See Corona release slides from Clojure North talk: 
 https://docs.google.com/presentation/d/1aRkmt_uRF7CDDlX5sYavf8s_uYVkYqIHZ-Sy3d5a3v4
+
 
 ### Why use Solr?
 
@@ -52,9 +54,7 @@ PR welcome!
 
 ### ROADMAP:
 
-- Better error handling (e.g. when solr is not started and we try to index or run a query)
 - Cover all Schema API 
-
 
 ## License
 
