@@ -1,6 +1,6 @@
 (ns corona.data-import
   (:require
-   [clojure.data.json :as json]
+   [jsonista.core :as json]
    [corona.utils :as utils]
    [cuerdas.core :as cstr]
    [org.httpkit.client :as http]
@@ -63,4 +63,4 @@
         options {:query-params {:command "status"}
                  :as :auto}
         resp @(http/get url options)]
-    (update resp :body json/read-str :key-fn #(-> % cstr/kebab keyword))))
+    (update resp :body json/read-value (json/object-mapper {:encode-key-fn #(-> % cstr/kebab keyword)}))))
