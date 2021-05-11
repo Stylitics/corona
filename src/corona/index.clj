@@ -1,6 +1,6 @@
 (ns corona.index
   (:require
-   [clojure.data.json :as json]
+   [jsonista.core :as json]
    [corona.utils :as utils]
    [org.httpkit.client :as http]))
 
@@ -46,10 +46,10 @@
   (let [url (utils/create-client-url client-config "/update")
         trim (fn [str] (.substring (java.lang.String. str) 1 (- (count str) 1)))
         request-body (if (not (map? commands))
-                       (let [parts (map #(trim (json/write-str %)) commands)
+                       (let [parts (map #(trim (json/write-value-as-string %)) commands)
                              joined-parts (clojure.string/join "," parts)]
                          (str \{ joined-parts \}))
-                       (json/write-str commands))
+                       (json/write-value-as-string commands))
         options {:throw-exceptions false
                  :query-params     settings
                  :body             request-body
@@ -104,7 +104,7 @@
                      "/update")
         url (utils/create-client-url client-config url-suffix)
         options {:query-params settings
-                 :body         (json/write-str doc-or-docs)
+                 :body         (json/write-value-as-string doc-or-docs)
                  :headers      {"Content-Type" "application/json"}
                  :as           :auto}]
     (-> @(http/post url options) :body utils/json-read-str)))
@@ -119,7 +119,7 @@
   (let [body {:delete id-ids-or-query-map}
         url (utils/create-client-url client-config "/update")
         options {:query-params settings
-                 :body         (json/write-str body)
+                 :body         (json/write-value-as-string body)
                  :headers      {"Content-Type" "application/json"}
                  :as           :auto}]
     (-> @(http/post url options) :body utils/json-read-str)))

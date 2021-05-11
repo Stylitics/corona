@@ -1,6 +1,6 @@
 (ns corona.query
   (:require
-   [clojure.data.json :as json]
+   [jsonista.core :as json]
    [clojure.string :as string]
    [corona.utils :as utils]
    [org.httpkit.client :as http]))
@@ -180,7 +180,7 @@
                      :as :auto}]
         (-> @(http/get url options) :body utils/json-read-str))
       (let [options {:headers {"Content-Type" "application/json; charset=utf-8"}
-                     :body (json/write-str {:params settings})}]
+                     :body (json/write-value-as-string {:params settings})}]
         (-> @(http/post url options) :body utils/json-read-str)))))
 
 (defn query-term-vectors

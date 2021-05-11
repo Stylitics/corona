@@ -1,5 +1,5 @@
 (ns corona.utils
-  (:require [clojure.data.json :as json]))
+  (:require [jsonista.core :as json]))
 
 (def default-http-config
   "Needs a custom :core value"
@@ -31,10 +31,12 @@ returning nil when parsing JSON fails."}
   "Try to parse JSON string. Returns nil if string is empty or unable to parse.
 Default :key-fn is \"keyword\". If *json-read-throw-on-error* was set to true,
 throw exception on any error."
-  ([s key-fn]
-     (try
-       (json/read-str s :key-fn key-fn)
-       (catch Exception _
-         (when *json-read-throw-on-error*
-           (throw (ex-info "JSON read error" {:string s}))))))
-  ([str] (json-read-str str keyword)))
+  [s & [key-fn]]
+  (try
+    (let [obj-mapper (if key-fn
+                       (json/object-mapper {:decode-key-fn key-fn})
+                       json/keyword-keys-object-mapper)]
+      (json/read-value s obj-mapper))
+    (catch Exception _
+      (when *json-read-throw-on-error*
+        (throw (ex-info "JSON read error" {:string s}))))))

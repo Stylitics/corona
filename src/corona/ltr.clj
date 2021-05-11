@@ -1,6 +1,6 @@
 (ns corona.ltr
   (:require
-   [clojure.data.json :as json]
+   [jsonista.core :as json]
    [clojure.string :as string]
    [corona.utils :as utils]
    [org.httpkit.client :as http])
@@ -85,7 +85,7 @@
   [client-config features]
   (delete-feature-store! client-config (-> features first :store))
   (let [url (make-feature-store-url client-config)
-        options {:body    (json/write-str features)
+        options {:body    (json/write-value-as-string features)
                  :headers {"Content-Type" "application/json"}
                  :as      :auto}]
     (-> @(http/put url options) :body utils/json-read-str)))
@@ -182,7 +182,7 @@
   NOTE: only supported with :http config type."
   [client-config model]
   (let [url (make-model-store-base-url client-config)
-        options {:body    (json/write-str model)
+        options {:body    (json/write-value-as-string model)
                  :headers {"Content-Type" "application/json"}
                  :as      :auto}]
     (-> @(http/put url options) :body utils/json-read-str)))

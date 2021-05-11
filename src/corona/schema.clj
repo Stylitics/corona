@@ -1,7 +1,7 @@
 (ns corona.schema
   (:require
    [org.httpkit.client :as http]
-   [clojure.data.json :as json]
+   [jsonista.core :as json]
    [clojure.string :as string]
    [corona.utils :as utils]))
 
@@ -70,7 +70,7 @@
   "
   [client-config body]
   (let [url (make-schema-url client-config)
-        options {:body         (json/write-str body)
+        options {:body         (json/write-value-as-string body)
                  :headers      {"Content-Type" "application/json"}
                  :as           :auto}]
     (-> @(http/post url options) :body utils/json-read-str)))
