@@ -1,6 +1,8 @@
 (defproject corona "0.1.13"
   :description "A clojure wrapper Solr client"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/Stylitics/corona"
+  :license {:name "The MIT License"
+            :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/data.csv "0.1.4"]
                  [commons-io/commons-io "2.6"]
@@ -11,4 +13,6 @@
                  [ring/ring-codec "1.1.1"]]
   :source-paths ["src"]
   :profiles {:uberjar {:aot :all}}
+  :repositories [["releases" {:url "https://repo.clojars.org"
+                              :creds :gpg}]]
   :main corona.core-admin)
