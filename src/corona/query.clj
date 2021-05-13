@@ -174,14 +174,11 @@
 (defn query-handler
   [client-config handler settings]
   (let [handler-uri (str "/" (name handler))
+        query-params (format-params settings)
+        options {:query-params query-params
+                 :as :auto}
         url (utils/create-client-url client-config handler-uri)]
-    (if (= (:method settings) :get)
-      (let [options {:query-params (format-params settings)
-                     :as :auto}]
-        (-> @(http/get url options) :body utils/json-read-str))
-      (let [options {:headers {"Content-Type" "application/json; charset=utf-8"}
-                     :body (json/write-value-as-string {:params settings})}]
-        (-> @(http/post url options) :body utils/json-read-str)))))
+    (-> @(http/get url options) :body utils/json-read-str)))
 
 (defn query-term-vectors
   "Settings

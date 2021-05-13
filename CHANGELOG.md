@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.13-SNAPSHOT] - 2021-05-13
+- Reverted ability to query using `POST` introduced in 0.1.11
+
 ## [0.1.12-SNAPSHOT] - 2021-05-11
 
 ### Changed
