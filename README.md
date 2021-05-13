@@ -54,6 +54,7 @@ PR welcome!
 
 ### ROADMAP:
 
+- Query using `POST`
 - Cover all Schema API 
 
 ## License
