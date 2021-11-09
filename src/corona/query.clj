@@ -177,8 +177,13 @@
         query-params (format-params settings)
         options {:query-params query-params
                  :as :auto}
-        url (utils/create-client-url client-config handler-uri)]
-    (-> @(http/get url options) :body utils/json-read-str)))
+        url (utils/create-client-url client-config handler-uri)
+        response @(http/get url options)
+        status (:status response)]
+    (if-not (#{400 200} status)
+      {:error {:msg "Solr server returned non-200 status code. The server logs may contain more details."
+               :status status}}
+      (-> response :body utils/json-read-str))))
 
 (defn query-term-vectors
   "Settings
