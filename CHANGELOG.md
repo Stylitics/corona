@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2021-11-23
+- Pass more solr errors back to the caller instead of returning nil
+
 ## [0.1.13] - 2021-05-13
 - Reverted ability to query using `POST` introduced in 0.1.11
 
