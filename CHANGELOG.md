@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2021-11-23
+## [0.1.14] - 2021-11-23
 - Pass more solr errors back to the caller instead of returning nil
 
 ## [0.1.13] - 2021-05-13
