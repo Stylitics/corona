@@ -117,7 +117,6 @@
                                    terms)
                      sorted-terms (sort-by second > (remove nil? scored-terms))
                      top-terms (take top sorted-terms)
-                     top-terms-count (count top-terms)
                      top-terms-total-score (reduce (fn [acc term]
                                                      (+ acc (second term)))
                                                    0
