@@ -145,7 +145,7 @@
         (string/join " ")))
 
 (defn interesting-terms-per-field->q
-  [interesting-terms-per-field settings]
+  [interesting-terms-per-field]
   (->> interesting-terms-per-field
        vals
        (map terms-per-field->q)
@@ -394,7 +394,7 @@
         int-terms (term-vectors-resp->interesting-terms-per-field
                    tv-resp
                    settings)
-        mltq (interesting-terms-per-field->q int-terms settings)
+        mltq (interesting-terms-per-field->q int-terms)
         fq (string/join " " [(:fq settings) (format "-(%s)" tv-q)])
         settings (-> settings
                      (assoc :mltq mltq)
