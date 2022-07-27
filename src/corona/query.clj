@@ -117,7 +117,6 @@
                                    terms)
                      sorted-terms (sort-by second > (remove nil? scored-terms))
                      top-terms (take top sorted-terms)
-                     top-terms-count (count top-terms)
                      top-terms-total-score (reduce (fn [acc term]
                                                      (+ acc (second term)))
                                                    0
@@ -137,16 +136,42 @@
              ))])
      term-vectors))))
 
+(defn- escape-term-chars
+  "Given a string that you want to search for, which may contain special chars, return
+  a string with some special chars escaped or removed.
+  This does not cover all the special characters used by lucene
+  (https://lucene.apache.org/core/8_11_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html?#Escaping_Special_Characters)
+  but only covers those which need escaping when already quoted. For example, the + in the following
+  query doesn't need escaping in the following query, since solr will treat it as a literal.
+
+    foo:\"a + b\"
+
+  However, the quote symbol in the following query does need escaping because it results in unbalanced
+  quotes.
+
+    foo:\"a \" b\"
+  "
+  [s]
+  (-> s
+      ;; replace backslash first, since the remaining replacements will
+      ;; add backslashes that we _don't_ want to double.
+      (string/replace "\\" "\\\\")
+      (string/replace "\"" "\\\"")))
+
 (defn terms-per-field->q
   [terms-map]
   (->>  terms-map
         (mapcat (fn [[field terms]]
-                  (map (fn [[term score]] (str field ":\"" term "\"^" (or score 1)))
+                  (map (fn [[term score]] (str field
+                                               ":\""
+                                               (escape-term-chars term)
+                                               "\"^"
+                                               (or score 1)))
                        terms)))
         (string/join " ")))
 
 (defn interesting-terms-per-field->q
-  [interesting-terms-per-field settings]
+  [interesting-terms-per-field]
   (->> interesting-terms-per-field
        vals
        (map terms-per-field->q)
@@ -395,7 +420,7 @@
         int-terms (term-vectors-resp->interesting-terms-per-field
                    tv-resp
                    settings)
-        mltq (interesting-terms-per-field->q int-terms settings)
+        mltq (interesting-terms-per-field->q int-terms)
         fq (string/join " " [(:fq settings) (format "-(%s)" tv-q)])
         settings (-> settings
                      (assoc :mltq mltq)
