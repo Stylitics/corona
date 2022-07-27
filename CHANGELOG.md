@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.15] - 2022-07-27
+- Escape characters for query-mlt-tv-edismax's mltq params
+
 ## [0.1.14] - 2021-11-23
 - Pass more solr errors back to the caller instead of returning nil
 

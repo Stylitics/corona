@@ -1,4 +1,4 @@
-(defproject corona "0.1.14"
+(defproject corona "0.1.15"
   :description "A clojure wrapper Solr client"
   :url "https://github.com/Stylitics/corona"
   :license {:name "The MIT License"
