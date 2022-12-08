@@ -384,7 +384,7 @@
   The name of the id field
 
   :mlt.ids
-  A lest of ids and boosts e.g. [[\"12345\" 3] [\"12346\" 2]]
+  A list of ids and boosts e.g. [[\"12345\" 3] [\"12346\" 2]]
 
   :mlt.top <int> 
   The number of top interesting terms to use, per field.
