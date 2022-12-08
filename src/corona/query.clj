@@ -392,6 +392,12 @@
   :q
   \"Regular edismax query\" that is added to mlt query
 
+  :_route_, default: searches all shards
+  The value will be hashed to find which shards to search for similar items.
+
+  :original-documents_route_, default: searches all shards
+  The value will be hashed to find which which shards the mlt.ids belong to.
+
   Special vars:
 
   ${mltq}
@@ -416,6 +422,7 @@
                  {:q tv-q
                   :tv.fl (:mlt.fl settings)
                   :tv.all true
+                  :_route_ (:original-documents_route_ settings)
                   :rows (count (:mlt.ids settings))})
         int-terms (term-vectors-resp->interesting-terms-per-field
                    tv-resp
