@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.16] - 2022-12-08
+- Add ability to supply multiple routes to `corona.query/query-mlt-tv-edismax`
+
 ## [0.1.15] - 2022-07-27
 - Escape characters for query-mlt-tv-edismax's mltq params
 
