@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- `corona.query/query` and `corona.query/query-mlt` no longer combine multiple `:fq` values into a single one.
+
 ## [0.1.16] - 2022-12-08
 - Add ability to supply multiple routes to `corona.query/query-mlt-tv-edismax`
 
