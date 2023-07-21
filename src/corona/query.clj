@@ -23,11 +23,16 @@
   (reduce-kv
    (fn [m k v]
      (let [k* (format-param k)]
-       (assoc m k* (string/join (if (#{"sort" "fl" "tv.fl" "mlt.fl"} k*)
-                                  ","
-                                  " ")
-                                (format-values v)))))
-   {}
+       (if (= "fq" k*)
+         (reduce (fn [acc v]
+                   (conj acc [k* v]))
+                 m
+                 (format-values v))
+         (conj m [k* (string/join (if (#{"sort" "fl" "tv.fl" "mlt.fl"} k*)
+                                    ","
+                                    " ")
+                                  (format-values v))]))))
+   []
    m))
 
 
