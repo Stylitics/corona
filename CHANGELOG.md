@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2023-07-21
+
+Re-release of 0.2.0 to fix a packaging issue.
+
 ## [0.2.0] - 2023-07-21
 
 ### Changed
